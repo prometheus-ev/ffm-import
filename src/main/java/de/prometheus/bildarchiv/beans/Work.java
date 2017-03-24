@@ -2,9 +2,7 @@ package de.prometheus.bildarchiv.beans;
 
 import java.util.List;
 
-import javax.xml.datatype.XMLGregorianCalendar;
-
-import org.openarchives.beans.Entity.Collection;
+import org.openarchives.beans.Entity;
 
 // Werk
 public class Work extends Basic {
@@ -21,12 +19,15 @@ public class Work extends Basic {
 	private List<Literature> illustrations;
 	private List<Exhibition> exhibitions;
 
-	public Work() {
-	}
+	public Work() { }
 
-	public Work(String id, String title, Collection collection, String distinction, String comment, List<String> synonyms,
-			XMLGregorianCalendar createdAt, XMLGregorianCalendar updatedAt) {
-		super(id, title, collection, distinction, comment, synonyms, createdAt, updatedAt);
+//	public Work(String id, String title, Collection collection, String distinction, String comment, List<String> synonyms,
+//			XMLGregorianCalendar createdAt, XMLGregorianCalendar updatedAt) {
+//		super(id, title, collection, distinction, comment, synonyms, createdAt, updatedAt);
+//	}
+
+	public Work(Entity entity) {
+		super(entity);
 	}
 
 	public Medium getImage() {
@@ -111,10 +112,10 @@ public class Work extends Basic {
 
 	@Override
 	public String toString() {
-		return "Work [image=" + image + ", creators=" + creators + ", commissioner=" + commissioner + ", portrayal="
-				+ portrayal + ", locatedIn=" + locatedIn + ", connectionsTo=" + connectionsTo + ", partsOf=" + partsOf
-				+ ", illustrations=" + illustrations + ", exhibitions=" + exhibitions + ", subtype=" + subtype + "]"
-				+ super.toString();
+		return "Work [subtype=" + subtype + ", image=" + image + ", creators=" + creators + ", commissioner="
+				+ commissioner + ", portrayal=" + portrayal + ", locatedIn=" + locatedIn + ", connectionsTo="
+				+ connectionsTo + ", partsOf=" + partsOf + ", illustrations=" + illustrations + ", exhibitions="
+				+ exhibitions + "]";
 	}
 
 }

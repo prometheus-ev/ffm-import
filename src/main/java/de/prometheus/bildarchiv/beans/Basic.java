@@ -5,7 +5,11 @@ import java.util.List;
 
 import javax.xml.datatype.XMLGregorianCalendar;
 
-import org.openarchives.beans.Entity.Collection;
+import org.openarchives.beans.Entity;
+import org.openarchives.beans.Entity.Datings;
+import org.openarchives.beans.Entity.Fields;
+import org.openarchives.beans.Entity.Properties;
+import org.openarchives.beans.Entity.Tags;
 
 
 public class Basic implements Serializable {
@@ -20,25 +24,45 @@ public class Basic implements Serializable {
 	private List<String> synonyms;
 	private XMLGregorianCalendar createdAt;
 	private XMLGregorianCalendar updatedAt;
+	private Datings datings;
+	private Tags tags;
+	private Properties properties;
+	private Fields fields;
 	
 	public Basic() { }
 	
-	public Basic(String id, String title, Collection collection, String distinction, String comment, List<String> synonyms,
-			XMLGregorianCalendar createdAt, XMLGregorianCalendar updatedAt) {
-		super();
-		
-		String collectionValue = collection == null ? "unknown" : collection.getValue();
-		
-		this.id = id;
-		this.title = title;
-		this.collection = collectionValue;
-		this.distinction = distinction;
-		this.comment = comment;
-		this.synonyms = synonyms;
-		this.createdAt = createdAt;
-		this.updatedAt = updatedAt;
-	}
+//	public Basic(String id, String title, Collection collection, String distinction, String comment, List<String> synonyms,
+//			XMLGregorianCalendar createdAt, XMLGregorianCalendar updatedAt) {
+//		super();
+//		
+//		String collectionValue = collection == null ? "unknown" : collection.getValue();
+//		
+//		this.id = id;
+//		this.title = title;
+//		this.collection = collectionValue;
+//		this.distinction = distinction;
+//		this.comment = comment;
+//		this.synonyms = synonyms;
+//		this.createdAt = createdAt;
+//		this.updatedAt = updatedAt;
+//	}
 	
+	public Basic(Entity entity) {
+		super();
+		this.id = entity.getId();
+		this.title = entity.getTitle();
+		this.collection = entity.getCollection() == null ? "unknown" : entity.getCollection().getValue();
+		this.distinction = entity.getDistinction(); 
+		this.comment = entity.getComment();
+		this.synonyms = entity.getSynonym();
+		this.createdAt = entity.getCreatedAt();
+		this.updatedAt = entity.getUpdatedAt();
+		this.datings = entity.getDatings();
+		this.tags = entity.getTags();
+		this.properties = entity.getProperties();
+		this.fields = entity.getFields();
+	}
+
 	public String getId() {
 		return id;
 	}
@@ -101,21 +125,50 @@ public class Basic implements Serializable {
 		this.updatedAt = updatedAt;
 	}
 	
+	public Datings getDatings() {
+		return datings;
+	}
+
+	public void setDatings(Datings datings) {
+		this.datings = datings;
+	}
+
+	public Tags getTags() {
+		return tags;
+	}
+
+	public void setTags(Tags tags) {
+		this.tags = tags;
+	}
+
+	public Properties getProperties() {
+		return properties;
+	}
+
+	public void setProperties(Properties properties) {
+		this.properties = properties;
+	}
+
+	public Fields getFields() {
+		return fields;
+	}
+
+	public void setFields(Fields fields) {
+		this.fields = fields;
+	}
+
+	
+	
 	@Override
 	public int hashCode() {
 		final int prime = 31;
 		int result = 1;
-		result = prime * result + ((collection == null) ? 0 : collection.hashCode());
-		result = prime * result + ((comment == null) ? 0 : comment.hashCode());
 		result = prime * result + ((createdAt == null) ? 0 : createdAt.hashCode());
-		result = prime * result + ((distinction == null) ? 0 : distinction.hashCode());
 		result = prime * result + ((id == null) ? 0 : id.hashCode());
-		result = prime * result + ((synonyms == null) ? 0 : synonyms.hashCode());
-		result = prime * result + ((title == null) ? 0 : title.hashCode());
 		result = prime * result + ((updatedAt == null) ? 0 : updatedAt.hashCode());
 		return result;
 	}
-	
+
 	@Override
 	public boolean equals(Object obj) {
 		if (this == obj)
@@ -125,40 +178,15 @@ public class Basic implements Serializable {
 		if (getClass() != obj.getClass())
 			return false;
 		Basic other = (Basic) obj;
-		if (collection == null) {
-			if (other.collection != null)
-				return false;
-		} else if (!collection.equals(other.collection))
-			return false;
-		if (comment == null) {
-			if (other.comment != null)
-				return false;
-		} else if (!comment.equals(other.comment))
-			return false;
 		if (createdAt == null) {
 			if (other.createdAt != null)
 				return false;
 		} else if (!createdAt.equals(other.createdAt))
 			return false;
-		if (distinction == null) {
-			if (other.distinction != null)
-				return false;
-		} else if (!distinction.equals(other.distinction))
-			return false;
 		if (id == null) {
 			if (other.id != null)
 				return false;
 		} else if (!id.equals(other.id))
-			return false;
-		if (synonyms == null) {
-			if (other.synonyms != null)
-				return false;
-		} else if (!synonyms.equals(other.synonyms))
-			return false;
-		if (title == null) {
-			if (other.title != null)
-				return false;
-		} else if (!title.equals(other.title))
 			return false;
 		if (updatedAt == null) {
 			if (other.updatedAt != null)
@@ -167,13 +195,16 @@ public class Basic implements Serializable {
 			return false;
 		return true;
 	}
-	
+
 	@Override
 	public String toString() {
 		return "Basic [id=" + id + ", title=" + title + ", collection=" + collection + ", distinction=" + distinction
 				+ ", comment=" + comment + ", synonyms=" + synonyms + ", createdAt=" + createdAt + ", updatedAt="
-				+ updatedAt + "]";
+				+ updatedAt + ", datings=" + datings + ", tags=" + tags + ", properties=" + properties + ", fields="
+				+ fields + "]";
 	}
+
+	
 	
 	
 }

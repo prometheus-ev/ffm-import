@@ -2,9 +2,7 @@ package de.prometheus.bildarchiv.beans;
 
 import java.util.List;
 
-import javax.xml.datatype.XMLGregorianCalendar;
-
-import org.openarchives.beans.Entity.Collection;
+import org.openarchives.beans.Entity;
 
 // Medium
 public class Medium extends Basic {
@@ -17,12 +15,17 @@ public class Medium extends Basic {
 	
 	public Medium() { }
 	
-	public Medium(String id, String title, Collection collection, String distinction, String comment, List<String> synonyms,
-			XMLGregorianCalendar createdAt, XMLGregorianCalendar updatedAt, String imagePath) {
-		super(id, title, collection, distinction, comment, synonyms, createdAt, updatedAt);
-		this.imagePath = imagePath;
-	}
+//	public Medium(String id, String title, Collection collection, String distinction, String comment, List<String> synonyms,
+//			XMLGregorianCalendar createdAt, XMLGregorianCalendar updatedAt, String imagePath) {
+//		super(id, title, collection, distinction, comment, synonyms, createdAt, updatedAt);
+//		this.imagePath = imagePath;
+//	}
 	
+	public Medium(Entity entity) {
+		super(entity);
+		this.imagePath = entity.getImagePath().getValue();
+	}
+
 	public List<Person> getPhotographers() {
 		return photographers;
 	}

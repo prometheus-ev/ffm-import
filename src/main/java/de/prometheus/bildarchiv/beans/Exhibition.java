@@ -1,10 +1,6 @@
 package de.prometheus.bildarchiv.beans;
 
-import java.util.List;
-
-import javax.xml.datatype.XMLGregorianCalendar;
-
-import org.openarchives.beans.Entity.Collection;
+import org.openarchives.beans.Entity;
 
 // Ausstellung
 public class Exhibition extends Basic {
@@ -17,11 +13,15 @@ public class Exhibition extends Basic {
 	
 	public Exhibition() { }
 	
-	public Exhibition(String id, String title, Collection collection, String distinction, String comment,
-			List<String> synonyms, XMLGregorianCalendar createdAt, XMLGregorianCalendar updatedAt) {
-		super(id, title, collection, distinction, comment, synonyms, createdAt, updatedAt);
-	}
+//	public Exhibition(String id, String title, Collection collection, String distinction, String comment,
+//			List<String> synonyms, XMLGregorianCalendar createdAt, XMLGregorianCalendar updatedAt) {
+//		super(id, title, collection, distinction, comment, synonyms, createdAt, updatedAt);
+//	}
 	
+	public Exhibition(Entity entity) {
+		super(entity);
+	}
+
 	public Person getCurator() {
 		return curator;
 	}
