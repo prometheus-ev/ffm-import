@@ -9,7 +9,6 @@ import java.io.ObjectInputStream;
 import java.net.HttpURLConnection;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -24,26 +23,26 @@ import javax.xml.bind.JAXBElement;
 import javax.xml.bind.JAXBException;
 import javax.xml.bind.Marshaller;
 import javax.xml.bind.PropertyException;
+import javax.xml.datatype.XMLGregorianCalendar;
 import javax.xml.namespace.QName;
 
-import org.apache.commons.lang3.time.DateFormatUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.openarchives.beans.Entity;
+import org.openarchives.beans.Entity.Datings;
+import org.openarchives.beans.Entity.Fields.Field;
+import org.openarchives.beans.Entity.Properties;
+import org.openarchives.beans.Entity.Tags;
 import org.openarchives.beans.ExtendedRelationship;
 import org.openarchives.beans.OAIPMHtype;
 import org.openarchives.beans.Prometheus;
 import org.openarchives.beans.Relationship;
 
 public class GentleSegmentMerger {
-
+	
 	private static final Logger logger = LogManager.getLogger(GentleSegmentMerger.class);
-	private String exportFileName = "_ffm_export.xml";
+	private String exportFileName;
 	private String destination;
-
-	GentleSegmentMerger(final String destination) {
-		this.destination = destination;
-	}
 
 	GentleSegmentMerger(final String destination, final String exportFileName) {
 		this.destination = destination;
@@ -55,7 +54,7 @@ public class GentleSegmentMerger {
 		long time = System.currentTimeMillis();
 		
 		try {
-			logger.info("[1] unmarshalling 'relationships' ...");
+			logger.info("Unmarshalling 'relationships' ...");
 			File[] files = get(new File("RELATIONSHIPS/"), ".kor");
 			Set<Relationship> relationships = new HashSet<>();
 			for (File f : files) {
@@ -64,7 +63,7 @@ public class GentleSegmentMerger {
 				relationships.addAll(s);
 			}
 			
-			logger.info("[2] unmarshalling 'entities' ...");
+			logger.info("Unmarshalling 'entities' ...");
 			files = get(new File("ENTITIES/"), ".kor");
 			Set<Entity> entities = new HashSet<>();
 			for (File f : files) {
@@ -72,10 +71,6 @@ public class GentleSegmentMerger {
 				Set<Entity> s = (Set) readObject(f);
 				entities.addAll(s);
 			}
-			
-			logger.info("[3] expanding data...");
-			logger.info(relationships.size());
-			logger.info(entities.size());
 			
 			List<Entity> sortedEntities = new ArrayList<>(entities);
 			Collections.sort(sortedEntities);
@@ -104,25 +99,18 @@ public class GentleSegmentMerger {
 			
 			final Set<Entity> result = Collections.synchronizedSet(new HashSet<Entity>());
 			if (notRetrieved.size() > 0) {
-				logger.info("[3.a] count of missing records: " + notRetrieved.size());
+				logger.info("Count of missing records: " + notRetrieved.size());
 				getMissingRecords(notRetrieved, result, asXml);
 			}
 			
-			File des;  
-			File file;
-			if(!destination.isEmpty()) {
-				des = new File(destination);
-				des.mkdirs();
-				file = new File(des, DateFormatUtils.format(new Date(), "dd-MM-yyyy") + exportFileName);
-			} else {
-				file = new File(DateFormatUtils.format(new Date(), "dd-MM-yyyy") + exportFileName);	
-			}
+			File desFolder = new File(destination);  
+			File exportFile = new File(desFolder, exportFileName);
 			
-			logger.info("[4] Writing file to " + file.getAbsolutePath());
-			exportXml(asXml, file);
+			logger.info("Creating export file " + exportFile.getAbsolutePath());
+			exportXml(asXml, exportFile);
 			
 			long duration = System.currentTimeMillis() - time;
-			logger.info("[5] done! ...took " + ((duration / 1000) / 60) + " min");
+			logger.info("Done! ...took " + ((duration / 1000) / 60) + " min");
 			
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();
@@ -138,7 +126,7 @@ public class GentleSegmentMerger {
 	}
 
 	@SuppressWarnings("unchecked")
-	private Set<Object> readObject(File file) throws ClassNotFoundException, IOException {
+	private static Set<Object> readObject(File file) throws ClassNotFoundException, IOException {
 		ObjectInputStream ois = new ObjectInputStream(new FileInputStream(file));
 		Set<Object> object = (Set<Object>) ois.readObject();
 		ois.close();
@@ -185,7 +173,7 @@ public class GentleSegmentMerger {
 			futures.add(future);
 		}
 
-		logger.info("[3.b] retrieving missing entities... this might take a moment (" + futures.size() + " threads)");
+		logger.info("Retrieving missing entities... this might take a moment (" + futures.size() + " threads)");
 		for (Future<Set<Entity>> future : futures) {
 			try {
 				result.addAll(future.get());

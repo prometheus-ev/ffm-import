@@ -29,8 +29,7 @@ public final class GentleUtils {
 		JAXBContext jaxbContext = JAXBContext.newInstance(OAIPMHtype.class, ObjectFactory.class);
 		Unmarshaller jaxbUnmarshaller = jaxbContext.createUnmarshaller();
 		StreamSource streamSource = new StreamSource(new BufferedInputStream(c.getInputStream()));
-		JAXBElement<OAIPMHtype> oai = jaxbUnmarshaller.unmarshal(streamSource, OAIPMHtype.class);
-		return oai;
+		return jaxbUnmarshaller.unmarshal(streamSource, OAIPMHtype.class);
 	}
 
 	/**

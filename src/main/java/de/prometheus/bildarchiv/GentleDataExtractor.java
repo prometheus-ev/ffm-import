@@ -79,24 +79,21 @@ public class GentleDataExtractor {
 			if(workEntity == null || mediumEntity == null)
 				continue;
 			
-			// TODO: VALIDATE NULLPOINTER_EXCEPTION
-			Work workObject = new Work(workEntity.getId(), workEntity.getTitle(), workEntity.getCollection(),
-					workEntity.getDistinction(), workEntity.getComment(), workEntity.getSynonym(),
-					workEntity.getCreatedAt(), workEntity.getUpdatedAt());
+			Work workObject = new Work(workEntity);
 			
 			if(workEntity.getSubType() != null) {
 				workObject.setSubtype(workEntity.getSubType());
 			}
 			
-			workObject.setImage(new Medium()); // #1
-			workObject.setCreators(new ArrayList<>()); // #2
-			workObject.setIllustrations(new ArrayList<>()); // #3
-			workObject.setExhibitions(new ArrayList<>()); // #4
-			workObject.setLocatedIn(new Institution()); // #5
-			workObject.setCommissioner(new Person()); // #6
-			workObject.setConnectionsTo(new ArrayList<>()); // #7
-			workObject.setPartsOf(new ArrayList<>()); // #8
-			workObject.setPortrayal(new Person()); // #9
+//			workObject.setImage(new Medium()); // #1
+//			workObject.setCreators(new ArrayList<>()); // #2
+//			workObject.setIllustrations(new ArrayList<>()); // #3
+//			workObject.setExhibitions(new ArrayList<>()); // #4
+//			workObject.setLocatedIn(new Institution()); // #5
+//			workObject.setCommissioner(new Person()); // #6
+//			workObject.setConnectionsTo(new ArrayList<>()); // #7
+//			workObject.setPartsOf(new ArrayList<>()); // #8
+//			workObject.setPortrayal(new Person()); // #9
 			
 			// #1
 			Medium mediumObject = getMedium(mediumEntity, geburtsortVon, sterbeOrt, institutionInOrt, verwertungsrechtAmFoto, fotografiertVon, schuelerInVon, false);
@@ -217,9 +214,7 @@ public class GentleDataExtractor {
 			Set<ExtendedRelationship> sammlungskatalog, Set<ExtendedRelationship> schuelerInVon,
 			Set<ExtendedRelationship> ausstellungskatalogZu) {
 		
-		Exhibition exhibitionObject = new Exhibition(exhibitionEntity.getId(), exhibitionEntity.getTitle(),
-				exhibitionEntity.getCollection(), exhibitionEntity.getDistinction(), exhibitionEntity.getComment(),
-				exhibitionEntity.getSynonym(), exhibitionEntity.getCreatedAt(), exhibitionEntity.getUpdatedAt());
+		Exhibition exhibitionObject = new Exhibition(exhibitionEntity);
 		exhibitionObject.setCurator(new Person());
 		exhibitionObject.setExhibitionCatalogue(new Literature());
 		exhibitionObject.setExhibitionVenue(new Place());
@@ -235,9 +230,7 @@ public class GentleDataExtractor {
 		List<ExtendedRelationship> ausstellungWurdeGezeigtIn = wurdeGezeigtIn.stream().filter(x -> x.getFrom().getId().equals(exhibitionEntity.getId())).collect(Collectors.toList());
 		if(ausstellungWurdeGezeigtIn.size() > 0) {
 			Entity ev = ausstellungWurdeGezeigtIn.get(0).getTo();
-			Place exhibitionVenueObject = new Place(ev.getId(), ev.getTitle(),
-					ev.getCollection(), ev.getDistinction(), ev.getComment(), ev.getSynonym(),
-					ev.getCreatedAt(), ev.getUpdatedAt());
+			Place exhibitionVenueObject = new Place(ev);
 			exhibitionObject.setExhibitionVenue(exhibitionVenueObject);;
 		}
 		// (Ausstellung) Ausstellungskatalog zu Ausstellung (Literatur)
@@ -261,9 +254,7 @@ public class GentleDataExtractor {
 			Set<ExtendedRelationship> sammlungskatalog, Set<ExtendedRelationship> schuelerInVon) {
 		
 		//System.out.println("\t\tl: " + literature.getTitle()); 
-		Literature literatureObject = new Literature(literature.getId(), literature.getTitle(),
-				literature.getCollection(), literature.getDistinction(), literature.getComment(),
-				literature.getSynonym(), literature.getCreatedAt(), literature.getUpdatedAt());
+		Literature literatureObject = new Literature(literature);
 		
 		literatureObject.setAuthor(new Person()); // author
 		literatureObject.setPublisher(new Person()); // publisher
@@ -289,8 +280,7 @@ public class GentleDataExtractor {
 		List<ExtendedRelationship> erschienenInOrt = erschienenIn.stream().filter(x -> x.getFrom().getId().equals(literature.getId())).collect(Collectors.toList());
 		if(erschienenInOrt.size() > 0)  {
 			Entity pi = erschienenInOrt.get(0).getTo();
-			Place publishedIn = new Place(pi.getId(), pi.getTitle(), pi.getCollection(),
-					pi.getDistinction(), pi.getComment(), pi.getSynonym(), pi.getCreatedAt(), pi.getUpdatedAt());
+			Place publishedIn = new Place(pi);
 			literatureObject.setPublishedIn(publishedIn);
 			// System.out.println("\t\tl_: erschienen in " + pi.getTitle());
 		}
@@ -323,9 +313,7 @@ public class GentleDataExtractor {
 		else imagePath = medium.getImagePath().getValue();
 		if(p) System.out.println("\t\t\tm:" + medium.getImagePath().getValue());
 		
-		Medium mediumObject = new Medium(medium.getId(), medium.getTitle(), medium.getCollection(),
-				medium.getDistinction(), medium.getComment(), medium.getSynonym(), medium.getCreatedAt(), medium.getUpdatedAt(),
-				imagePath); 
+		Medium mediumObject = new Medium(medium); 
 		mediumObject.setExploitationRight(new Institution()); // rights holder
 		mediumObject.setPhotographers(new ArrayList<>()); // photographer
 		// Medium Verwertungsrechte liegen bei Institution
@@ -350,16 +338,12 @@ public class GentleDataExtractor {
 
 	// Institution
 	private static Institution getInstitution(Entity cc, Set<ExtendedRelationship> institutionInOrt) {
-		Institution institution = new Institution(cc.getId(), cc.getTitle(),
-				cc.getCollection(), cc.getDistinction(), cc.getComment(), cc.getSynonym(),
-				cc.getCreatedAt(), cc.getUpdatedAt());
+		Institution institution = new Institution(cc);
 		institution.setLocation(new Place());
 		List<ExtendedRelationship> locations = institutionInOrt.stream().filter(x -> x.getFrom().getId().equals(cc.getId())).collect(Collectors.toList());
 		if(locations.size() > 0) {
 			Entity loc = locations.get(0).getTo();
-			Place locationObject = new Place(loc.getId(), loc.getTitle(),
-					loc.getCollection(), loc.getDistinction(), loc.getComment(),
-					loc.getSynonym(), loc.getCreatedAt(), loc.getUpdatedAt());
+			Place locationObject = new Place(loc);
 			institution.setLocation(locationObject);
 		}
 		return institution;
@@ -367,9 +351,7 @@ public class GentleDataExtractor {
 
 	// Person
 	private static Person getPerson(Entity person, Set<ExtendedRelationship> geburtsortVon, Set<ExtendedRelationship> sterbeOrt, Set<ExtendedRelationship> schuelerInVon, boolean p, int depth) {
-		Person personObject = new Person(person.getId(), person.getTitle(), person.getCollection(),
-				person.getDistinction(), person.getComment(), person.getSynonym(), person.getCreatedAt(),
-				person.getUpdatedAt());
+		Person personObject = new Person(person);
 		personObject.setTeachers(new ArrayList<>());
 		personObject.setBirthPlace(new Place());
 		personObject.setPlaceOfDeath(new Place());
@@ -378,14 +360,14 @@ public class GentleDataExtractor {
 		List<ExtendedRelationship> geborenIn = geburtsortVon.stream().filter(x -> x.getTo().getId().equals(person.getId())).collect(Collectors.toList());
 		if(geborenIn.size() > 0) {
 			Entity bp = geborenIn.get(0).getFrom();
-			Place birthPlace = new Place(bp.getId(), bp.getTitle(), bp.getCollection(), bp.getDistinction(), bp.getComment(), bp.getSynonym(), bp.getCreatedAt(), bp.getUpdatedAt());
+			Place birthPlace = new Place(bp);
 			personObject.setBirthPlace(birthPlace);
 		}
 		// (Ort) Sterbeort von (Person)
 		List<ExtendedRelationship> gestorbenIn = sterbeOrt.stream().filter(x -> x.getTo().getId().equals(person.getId())).collect(Collectors.toList());
 		if(gestorbenIn.size() > 0) {
 			Entity dp = gestorbenIn.get(0).getFrom();
-			Place placeOfDeath = new Place(dp.getId(), dp.getTitle(), dp.getCollection(), dp.getDistinction(), dp.getComment(), dp.getSynonym(), dp.getCreatedAt(), dp.getUpdatedAt());
+			Place placeOfDeath = new Place(dp);
 			personObject.setPlaceOfDeath(placeOfDeath);
 		}
 		
