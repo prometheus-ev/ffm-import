@@ -15,6 +15,7 @@ import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlElement;
+import javax.xml.bind.annotation.XmlRootElement;
 import javax.xml.bind.annotation.XmlSchemaType;
 import javax.xml.bind.annotation.XmlType;
 import javax.xml.bind.annotation.XmlValue;
@@ -634,7 +635,7 @@ public class Entity implements Serializable, Comparable<Entity>{
 	 * 
 	 */
 	@XmlAccessorType(XmlAccessType.FIELD)
-	@XmlType(name = "", propOrder = { "dating" })
+//	@XmlType(name = "", propOrder = { "dating" })
 	public static class Datings implements Serializable {
 
 		private static final long serialVersionUID = -5762240858123704606L;
@@ -825,7 +826,8 @@ public class Entity implements Serializable, Comparable<Entity>{
 	 * 
 	 */
 	@XmlAccessorType(XmlAccessType.FIELD)
-	@XmlType(name = "", propOrder = { "field" })
+	@XmlRootElement
+//	@XmlType(name = "", propOrder = { "fields" })
 	public static class Fields implements Serializable {
 
 		private static final long serialVersionUID = 2006000618568294878L;
@@ -931,6 +933,11 @@ public class Entity implements Serializable, Comparable<Entity>{
 			 */
 			public void setName(String value) {
 				this.name = value;
+			}
+
+			@Override
+			public String toString() {
+				return "Field [name=" + name + ", value=" + value + "]";
 			}
 
 		}
@@ -1042,7 +1049,7 @@ public class Entity implements Serializable, Comparable<Entity>{
 	 * 
 	 */
 	@XmlAccessorType(XmlAccessType.FIELD)
-	@XmlType(name = "", propOrder = { "property" })
+//	@XmlType(name = "", propOrder = { "property" })
 	public static class Properties implements Serializable {
 
 		private static final long serialVersionUID = 2317458202304162661L;
@@ -1177,7 +1184,7 @@ public class Entity implements Serializable, Comparable<Entity>{
 	 * 
 	 */
 	@XmlAccessorType(XmlAccessType.FIELD)
-	@XmlType(name = "", propOrder = { "tag" })
+//	@XmlType(name = "", propOrder = { "tag" })
 	public static class Tags implements Serializable {
 
 		private static final long serialVersionUID = -3000681005275357270L;
