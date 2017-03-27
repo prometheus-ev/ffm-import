@@ -23,16 +23,11 @@ import javax.xml.bind.JAXBElement;
 import javax.xml.bind.JAXBException;
 import javax.xml.bind.Marshaller;
 import javax.xml.bind.PropertyException;
-import javax.xml.datatype.XMLGregorianCalendar;
 import javax.xml.namespace.QName;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.openarchives.beans.Entity;
-import org.openarchives.beans.Entity.Datings;
-import org.openarchives.beans.Entity.Fields.Field;
-import org.openarchives.beans.Entity.Properties;
-import org.openarchives.beans.Entity.Tags;
 import org.openarchives.beans.ExtendedRelationship;
 import org.openarchives.beans.OAIPMHtype;
 import org.openarchives.beans.Prometheus;
@@ -49,7 +44,7 @@ public class GentleSegmentMerger {
 		this.exportFileName = exportFileName;
 	}
 
-	public void merge() {
+	public File merge() {
 
 		long time = System.currentTimeMillis();
 		
@@ -112,6 +107,8 @@ public class GentleSegmentMerger {
 			long duration = System.currentTimeMillis() - time;
 			logger.info("Done! ...took " + ((duration / 1000) / 60) + " min");
 			
+			return exportFile;
+			
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();
 		} catch (ClassNotFoundException e) {
@@ -123,6 +120,8 @@ public class GentleSegmentMerger {
 		} catch (JAXBException e) {
 			e.printStackTrace();
 		}
+		
+		return null;
 	}
 
 	@SuppressWarnings("unchecked")

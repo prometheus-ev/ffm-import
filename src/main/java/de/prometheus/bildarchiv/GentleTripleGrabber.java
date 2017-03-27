@@ -74,7 +74,11 @@ public class GentleTripleGrabber {
 			gentleTripleGrabber.listRecords();
 			
 			GentleSegmentMerger gentleSegmentMerger = new GentleSegmentMerger(destination, exportFile);
-			gentleSegmentMerger.merge();
+			File importFile = gentleSegmentMerger.merge();
+			
+			GentleDataExtractor gentleDataExtractor = new GentleDataExtractor(importFile);
+			gentleDataExtractor.getAndStoreData();
+			
 			
 		} catch (JAXBException e) {
 			e.printStackTrace();
