@@ -23,7 +23,7 @@ public class Medium extends Basic {
 	
 	public Medium(Entity entity) {
 		super(entity);
-		this.imagePath = entity.getImagePath().getValue();
+		this.imagePath = entity.getImagePath() == null ? "unknown" : entity.getImagePath().getValue();
 	}
 
 	public List<Person> getPhotographers() {
