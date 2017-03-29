@@ -9,7 +9,6 @@ import java.io.ObjectInputStream;
 import java.net.HttpURLConnection;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -26,7 +25,6 @@ import javax.xml.bind.Marshaller;
 import javax.xml.bind.PropertyException;
 import javax.xml.namespace.QName;
 
-import org.apache.commons.lang3.time.DateFormatUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.openarchives.beans.Entity;
@@ -36,15 +34,6 @@ import org.openarchives.beans.Prometheus;
 import org.openarchives.beans.Relationship;
 
 public class GentleSegmentMerger {
-	
-//	private static final String suffix = "_ffm_export.xml";
-//	
-//	public static void main(String[] args) {
-//		String exportFile = DateFormatUtils.format(new Date(), "dd-MM-yyyy") + suffix;
-//		GentleSegmentMerger gentleSegmentMerger = new GentleSegmentMerger("/Users/matana/Desktop/", exportFile);
-//		File merge = gentleSegmentMerger.merge();
-//		
-//	}
 	
 	private static final Logger logger = LogManager.getLogger(GentleSegmentMerger.class);
 	private String exportFileName;

@@ -38,7 +38,7 @@ import de.prometheus.bildarchiv.beans.Work;
 
 public class GentleDataExtractor {
 
-	private static final Logger logger = LogManager.getLogger(GentleTripleGrabber.class);
+	private static final Logger logger = LogManager.getLogger(GentleDataExtractor.class);
 	
 	private File importFile;
 	
@@ -68,7 +68,9 @@ public class GentleDataExtractor {
 	private Set<ExtendedRelationship> ausstellungskatalogZu;
 
 	public GentleDataExtractor(File importFile) {
+		
 		this.importFile = importFile;
+		
 		try {
 			init();
 		} catch (FileNotFoundException e) {
@@ -83,6 +85,8 @@ public class GentleDataExtractor {
 	}
 
 	private void init() throws FileNotFoundException, InterruptedException, ExecutionException, JAXBException {
+		
+		logger.info("init-method called... filtering relationships");
 		
 		this.relationships = getRelationships(importFile);
 		this.befindetSichIn = filteredRelationships(relationships, Relations.befindetSichIn);
@@ -108,6 +112,8 @@ public class GentleDataExtractor {
 		this.schuelerInVon = filteredRelationships(relationships, Relations.schuelerInVon);
 		this.auftraggeberVonWerk = filteredRelationships(relationships, Relations.auftraggeberVonWerk);
 		this.ausstellungskatalogZu = filteredRelationships(relationships, Relations.ausstellungskatalogZu);
+		
+		logger.info("init-method called... done!");
 	}
 
 	// Ausstellung
@@ -434,10 +440,13 @@ public class GentleDataExtractor {
 			}
 			
 			works.add(workObject); // collect work object
+			logger.info("added new work object '" + workObject.getTitle() + "' left " + (bilddateiZuWerk.size() - works.size()));
 		}
 		
 		PrometheusImport imports = new PrometheusImport();
 		imports.setWorks(works);
+		
+		logger.info("creating file ..._ffm_final_import.xml");
 		
 		JAXBContext jaxbContext = JAXBContext.newInstance(PrometheusImport.class);
 		JAXBElement<PrometheusImport> element = new JAXBElement<PrometheusImport>(
@@ -446,7 +455,7 @@ public class GentleDataExtractor {
 		Marshaller marshaller = jaxbContext.createMarshaller();
 		marshaller.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, true);
 		marshaller.marshal(element, new File(importFile.getParent(), DateFormatUtils.format(new Date(), "dd-MM-yyyy") + "_ffm_final_import.xml"));
-		
+		logger.info("data extraction finished!");
 	}
 
 }
