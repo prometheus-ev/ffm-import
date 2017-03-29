@@ -4,3 +4,5 @@
 /ffm_import.xml
 /bin/
 *.log
+/ENTITIES/
+/RELATIONSHIPS/
