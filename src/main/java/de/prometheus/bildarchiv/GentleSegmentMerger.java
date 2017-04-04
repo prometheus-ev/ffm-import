@@ -43,14 +43,18 @@ public class GentleSegmentMerger {
 		this.destination = destination;
 		this.exportFileName = exportFileName;
 	}
-
+	
 	public File merge() {
 
 		long time = System.currentTimeMillis();
 		
 		try {
 			logger.info("Unmarshalling 'relationships' ...");
-			File[] files = get(new File("/tmp", "RELATIONSHIPS/"), ".kor");
+			
+			File tmpDir = new File("/tmp");
+			tmpDir.mkdirs();
+			
+			File[] files = get(new File(tmpDir, "RELATIONSHIPS/"), ".kor");
 			Set<Relationship> relationships = new HashSet<>();
 			for (File f : files) {
 				@SuppressWarnings({ "unchecked", "rawtypes" })
@@ -59,7 +63,7 @@ public class GentleSegmentMerger {
 			}
 			
 			logger.info("Unmarshalling 'entities' ...");
-			files = get(new File("/tmp", "ENTITIES/"), ".kor");
+			files = get(new File(tmpDir, "ENTITIES/"), ".kor");
 			Set<Entity> entities = new HashSet<>();
 			for (File f : files) {
 				@SuppressWarnings({ "unchecked", "rawtypes" })
