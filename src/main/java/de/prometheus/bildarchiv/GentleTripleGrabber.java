@@ -36,7 +36,7 @@ import org.openarchives.beans.RecordType;
 import org.openarchives.beans.ResumptionTokenType;
 
 public class GentleTripleGrabber {
-	
+
 	private static final String exportFileName = "_ffm_export.xml";
 
 	/**
@@ -44,42 +44,41 @@ public class GentleTripleGrabber {
 	 * A gentle command line tool for harvesting OAI-PMH XML data provided by
 	 * <a href="https://github.com/coneda/kor">ConedaKOR</a>
 	 * </p>
+	 * 
 	 * @param args
 	 *            -Xms1g -Xmx2g -Dlog4j.configurationFile=/path/to/log4j2.xml
 	 *            -jar ffm.jar -d /path/to/data/folder/
 	 */
 	public static void main(String[] args) {
-		
+
 		String exportFile = DateFormatUtils.format(new Date(), "dd-MM-yyyy") + exportFileName;
 		String destination;
-		
+
 		Options options = new Options();
-		
+
 		Option option = new Option("d", true, "destination folder");
 		option.setRequired(false);
 		options.addOption(option);
 		CommandLineParser parser = new DefaultParser();
-		
-		
+
 		try {
-			
+
 			CommandLine cmd = parser.parse(options, args);
 			destination = cmd.getOptionValue("d") == null ? "/tmp" : cmd.getOptionValue("d");
 			logger.info("Final export file " + exportFile + " will be saved to " + destination);
-			
+
 			GentleTripleGrabber gentleTripleGrabber = new GentleTripleGrabber(Endpoint.ENTITIES);
 			gentleTripleGrabber.listRecords();
-			
+
 			gentleTripleGrabber = new GentleTripleGrabber(Endpoint.RELATIONSHIPS);
 			gentleTripleGrabber.listRecords();
-			
+
 			GentleSegmentMerger gentleSegmentMerger = new GentleSegmentMerger(destination, exportFile);
 			File importFile = gentleSegmentMerger.merge();
-			
+
 			GentleDataExtractor gentleDataExtractor = new GentleDataExtractor(importFile);
 			gentleDataExtractor.getAndStoreData();
-			
-			
+
 		} catch (JAXBException e) {
 			e.printStackTrace();
 		} catch (IOException e) {
@@ -97,20 +96,19 @@ public class GentleTripleGrabber {
 			tmpEnt.deleteOnExit();
 			tmpRel.deleteOnExit();
 		}
-		
+
 	}
-	
+
 	private static final Logger logger = LogManager.getLogger(GentleTripleGrabber.class);
-//	private static String destination;
+	// private static String destination;
 	private Endpoint endpoint;
-	
+
 	private GentleTripleGrabber(Endpoint endpoint) {
 		this.endpoint = endpoint;
 	}
 
 	@SuppressWarnings("unchecked")
-	private void listRecords()
-			throws JAXBException, IOException, NoSuchEndpointException, InterruptedException {
+	private void listRecords() throws JAXBException, IOException, NoSuchEndpointException, InterruptedException {
 
 		Integer counter = 0;
 		@SuppressWarnings("rawtypes")
@@ -131,7 +129,14 @@ public class GentleTripleGrabber {
 
 			case ENTITIES:
 				for (RecordType recordType : records) {
-					set.add(recordType.getMetadata().getEntity());
+					if (recordType == null)
+						logger.info("recordType == null");
+					else if (recordType.getMetadata() == null)
+						logger.info("recordType.getMetadata() == null");
+					else if (recordType.getMetadata().getEntity() == null)
+						logger.info("recordType.getMetadata().getEntity() == null");
+					else
+						set.add(recordType.getMetadata().getEntity());
 				}
 				break;
 			case RELATIONSHIPS:
@@ -148,13 +153,15 @@ public class GentleTripleGrabber {
 				counter += set.size(); // increment global counter
 				executor.execute(writeObject(endpoint.name(), new HashSet<>(set), index.incrementAndGet()));
 				set = new HashSet<>();
-				logger.info("Fechted " + counter + ", missing " + (completeListSize.intValue() - counter)  + " " +  endpoint.name() );
+				logger.info("Fechted " + counter + ", missing " + (completeListSize.intValue() - counter) + " "
+						+ endpoint.name());
 			}
 
-			oai = GentleUtils.getElement(GentleUtils.getConnectionFor(endpoint.listRecords(resumptionToken.getValue())));
+			oai = GentleUtils
+					.getElement(GentleUtils.getConnectionFor(endpoint.listRecords(resumptionToken.getValue())));
 			records = oai.getValue().getListRecords().getRecord();
 			resumptionToken = oai.getValue().getListRecords().getResumptionToken();
-			
+
 			try {
 				Thread.sleep(200); // the gentleness
 			} catch (InterruptedException e) {
@@ -163,9 +170,13 @@ public class GentleTripleGrabber {
 		}
 
 		counter += set.size(); // last increment of global counter
-		executor.execute(writeObject(endpoint.name(), new HashSet<>(set), index.incrementAndGet())); // save data chunk
+		executor.execute(writeObject(endpoint.name(), new HashSet<>(set), index.incrementAndGet())); // save
+																										// data
+																										// chunk
 		executor.shutdown();
-		executor.awaitTermination(3000, TimeUnit.MILLISECONDS); // wait until files are written
+		executor.awaitTermination(3000, TimeUnit.MILLISECONDS); // wait until
+																// files are
+																// written
 
 		boolean b = completeListSize.intValue() == counter;
 		int missing = b ? 0 : (completeListSize.intValue() - counter);
@@ -183,16 +194,16 @@ public class GentleTripleGrabber {
 					File file = new File(parent, type + "_" + index + ".kor");
 					ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(file));
 					oos.writeObject(set);
-					logger.debug("Temp file created " + file.getAbsolutePath() +  " [" + file.length() + " bytes]");
+					logger.debug("Temp file created " + file.getAbsolutePath() + " [" + file.length() + " bytes]");
 					oos.close();
 				} catch (IOException e) {
 					e.printStackTrace();
 				}
 			}
-			
+
 		};
 	}
-	
+
 	@SuppressWarnings("unused")
 	private void printLastRecordPage(InputStream inputStream) throws IOException {
 		BufferedInputStream bis = new BufferedInputStream(inputStream);
@@ -209,7 +220,7 @@ public class GentleTripleGrabber {
 			bos.close();
 		}
 	}
-	
+
 	@SuppressWarnings("unused")
 	private InputStream copy(InputStream inputStream) throws IOException {
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
