@@ -10,6 +10,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.ObjectOutputStream;
 import java.math.BigInteger;
+import java.net.HttpURLConnection;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
@@ -34,6 +35,8 @@ import org.apache.logging.log4j.Logger;
 import org.openarchives.beans.OAIPMHtype;
 import org.openarchives.beans.RecordType;
 import org.openarchives.beans.ResumptionTokenType;
+
+import de.prometheus.bildarchiv.exception.ResumptionTokenNullException;
 
 public class GentleTripleGrabber {
 
@@ -108,7 +111,7 @@ public class GentleTripleGrabber {
 	}
 
 	@SuppressWarnings("unchecked")
-	private void listRecords() throws JAXBException, IOException, NoSuchEndpointException, InterruptedException {
+	private void listRecords() throws JAXBException, IOException, NoSuchEndpointException, InterruptedException, ResumptionTokenNullException {
 
 		Integer counter = 0;
 		@SuppressWarnings("rawtypes")
@@ -157,8 +160,8 @@ public class GentleTripleGrabber {
 						+ endpoint.name());
 			}
 
-			oai = GentleUtils
-					.getElement(GentleUtils.getConnectionFor(endpoint.listRecords(resumptionToken.getValue())));
+			HttpURLConnection connectionFor = GentleUtils.getConnectionFor(endpoint.listRecords(resumptionToken.getValue()));
+			oai = GentleUtils.getElement(connectionFor);
 			records = oai.getValue().getListRecords().getRecord();
 			resumptionToken = oai.getValue().getListRecords().getResumptionToken();
 

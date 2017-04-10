@@ -2,6 +2,7 @@ package de.prometheus.bildarchiv;
 
 import java.io.BufferedInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 
@@ -11,10 +12,14 @@ import javax.xml.bind.JAXBException;
 import javax.xml.bind.Unmarshaller;
 import javax.xml.transform.stream.StreamSource;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.openarchives.beans.OAIPMHtype;
 import org.openarchives.beans.ObjectFactory;
 
 public final class GentleUtils {
+	
+	private static final Logger logger = LogManager.getLogger(GentleUtils.class);
 	
 	private GentleUtils() {}
 	
@@ -26,9 +31,12 @@ public final class GentleUtils {
 	 * @throws IOException
 	 */
 	public static JAXBElement<OAIPMHtype> getElement(HttpURLConnection c) throws JAXBException, IOException {
+		if(c == null)
+			logger.error("HttpURLConnection is null...");
+		InputStream inputStream = c.getInputStream();
 		JAXBContext jaxbContext = JAXBContext.newInstance(OAIPMHtype.class, ObjectFactory.class);
 		Unmarshaller jaxbUnmarshaller = jaxbContext.createUnmarshaller();
-		StreamSource streamSource = new StreamSource(new BufferedInputStream(c.getInputStream()));
+		StreamSource streamSource = new StreamSource(new BufferedInputStream(inputStream));
 		return jaxbUnmarshaller.unmarshal(streamSource, OAIPMHtype.class);
 	}
 
