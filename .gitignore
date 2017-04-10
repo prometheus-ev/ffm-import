@@ -6,3 +6,4 @@
 *.log
 /ENTITIES/
 /RELATIONSHIPS/
+/.settings/
