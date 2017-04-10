@@ -15,7 +15,7 @@ public class Work extends Basic {
 	private Person portrayal;
 	private Institution locatedIn;
 	private List<String> connectionsTo; // work.id
-	private List<String> partsOf; // work.id
+	private List<Basic> partsOf; // work.id
 	private List<Literature> illustrations;
 	private List<Exhibition> exhibitions;
 
@@ -78,11 +78,11 @@ public class Work extends Basic {
 		this.connectionsTo = connectionsTo;
 	}
 
-	public List<String> getPartsOf() {
+	public List<Basic> getPartsOf() {
 		return partsOf;
 	}
 
-	public void setPartsOf(List<String> partsOf) {
+	public void setPartsOf(List<Basic> partsOf) {
 		this.partsOf = partsOf;
 	}
 

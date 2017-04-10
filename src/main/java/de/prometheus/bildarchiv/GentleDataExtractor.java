@@ -27,6 +27,7 @@ import org.openarchives.beans.Entity;
 import org.openarchives.beans.ExtendedRelationship;
 import org.openarchives.beans.Prometheus;
 
+import de.prometheus.bildarchiv.beans.Basic;
 import de.prometheus.bildarchiv.beans.Exhibition;
 import de.prometheus.bildarchiv.beans.Institution;
 import de.prometheus.bildarchiv.beans.Literature;
@@ -82,6 +83,11 @@ public class GentleDataExtractor {
 		} catch (JAXBException e) {
 			e.printStackTrace();
 		}
+	}
+	
+	public static void main(String[] args) throws JAXBException {
+		GentleDataExtractor gentleDataExtractor = new GentleDataExtractor(new File("/Users/matana/Desktop/28-03-2017_ffm_export.xml"));
+		gentleDataExtractor.getAndStoreData();
 	}
 
 	private void init() throws FileNotFoundException, InterruptedException, ExecutionException, JAXBException {
@@ -422,9 +428,11 @@ public class GentleDataExtractor {
 			List<ExtendedRelationship> parts = istTeilVonB.stream().filter(x -> x.getFrom().getId().equals(workEntity.getId())).collect(Collectors.toList());
 			// #8
 			if(parts.size() > 0) {
-				List<String> relations = new ArrayList<>();
+				List<Basic> relations = new ArrayList<>();
 				for (ExtendedRelationship c : parts) {
-					relations.add(c.getTo().getId());
+					Basic partOf = new Basic(c.getTo());
+					// relations.add(c.getTo().getId());
+					relations.add(partOf);
 				}
 				workObject.setPartsOf(relations);
 				// System.out.println("\tparts_: " + parts.size());
