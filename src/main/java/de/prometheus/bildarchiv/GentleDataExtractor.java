@@ -85,11 +85,6 @@ public class GentleDataExtractor {
 		}
 	}
 	
-	public static void main(String[] args) throws JAXBException {
-		GentleDataExtractor gentleDataExtractor = new GentleDataExtractor(new File("/Users/matana/Desktop/28-03-2017_ffm_export.xml"));
-		gentleDataExtractor.getAndStoreData();
-	}
-
 	private void init() throws FileNotFoundException, InterruptedException, ExecutionException, JAXBException {
 		
 		logger.info("init-method called... filtering relationships");
