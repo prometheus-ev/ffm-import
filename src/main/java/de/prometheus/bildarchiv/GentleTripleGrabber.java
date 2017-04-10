@@ -92,6 +92,8 @@ public class GentleTripleGrabber {
 			e.printStackTrace();
 		} catch (ParseException e) {
 			e.printStackTrace();
+		} catch (ResumptionTokenNullException e) {
+			e.printStackTrace();
 		} finally {
 			// Delete temporary created files
 			File tmpEnt = new File("/tmp", Endpoint.ENTITIES.name());
