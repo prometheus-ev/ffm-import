@@ -4,7 +4,9 @@ import java.util.List;
 
 import org.openarchives.beans.Entity;
 
-// Medium
+/**
+ * This class represents an image with his associated attributes. 
+ */
 public class Medium extends Basic {
 	
 	private static final long serialVersionUID = 500834900196543618L;
@@ -14,12 +16,6 @@ public class Medium extends Basic {
 	private String imagePath;
 	
 	public Medium() { }
-	
-//	public Medium(String id, String title, Collection collection, String distinction, String comment, List<String> synonyms,
-//			XMLGregorianCalendar createdAt, XMLGregorianCalendar updatedAt, String imagePath) {
-//		super(id, title, collection, distinction, comment, synonyms, createdAt, updatedAt);
-//		this.imagePath = imagePath;
-//	}
 	
 	public Medium(Entity entity) {
 		super(entity);

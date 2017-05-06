@@ -1,15 +1,20 @@
 package de.prometheus.bildarchiv.beans;
 
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import org.openarchives.beans.Entity;
+
+import com.google.gson.Gson;
 
 // Werk
 public class Work extends Basic {
 
 	private static final long serialVersionUID = 5113927173240646123L;
 	private String subtype;
-	private Medium image;
+	private List<Medium> mediums = new ArrayList<>();
 	private List<Person> creators;
 	private Person commissioner;
 	private Person portrayal;
@@ -30,12 +35,16 @@ public class Work extends Basic {
 		super(entity);
 	}
 
-	public Medium getImage() {
-		return image;
+	public List<Medium> getMediums() {
+		return mediums;
+	}
+	
+	public void setMediums(List<Medium> mediums) {
+		this.mediums.addAll(mediums);
 	}
 
-	public void setImage(Medium image) {
-		this.image = image;
+	public void setMedium(Medium medium) {
+		this.mediums.add(medium);
 	}
 
 	public List<Person> getCreators() {
@@ -112,10 +121,14 @@ public class Work extends Basic {
 
 	@Override
 	public String toString() {
-		return "Work [subtype=" + subtype + ", image=" + image + ", creators=" + creators + ", commissioner="
+		return "Work [subtype=" + subtype + ", mediums=" + mediums + ", creators=" + creators + ", commissioner="
 				+ commissioner + ", portrayal=" + portrayal + ", locatedIn=" + locatedIn + ", connectionsTo="
 				+ connectionsTo + ", partsOf=" + partsOf + ", illustrations=" + illustrations + ", exhibitions="
 				+ exhibitions + "]";
+	}
+
+	public String toJson() {
+		return new Gson().toJson(this);
 	}
 
 }
