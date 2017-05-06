@@ -15,7 +15,7 @@ import org.junit.Test;
 import org.openarchives.beans.ExtendedRelationship;
 import org.openarchives.beans.Prometheus;
 
-public class MediumEctractionTests {
+public class MediumExtractionTests {
 
 	private static Set<ExtendedRelationship> bilddateiZuWerk;
 

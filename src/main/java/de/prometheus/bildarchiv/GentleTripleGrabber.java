@@ -79,7 +79,7 @@ public class GentleTripleGrabber {
 			GentleSegmentMerger gentleSegmentMerger = new GentleSegmentMerger(destination, exportFile);
 			File importFile = gentleSegmentMerger.merge();
 
-			GentleDataExtractor gentleDataExtractor = new GentleDataExtractor(importFile);
+			GentleDataExtractor gentleDataExtractor = new GentleDataExtractor(importFile, true);
 			gentleDataExtractor.getAndStoreData();
 
 		} catch (JAXBException e) {
@@ -150,16 +150,14 @@ public class GentleTripleGrabber {
 				}
 				break;
 			default:
-				throw new NoSuchEndpointException(
-						"WrongEndpointSelectionException: allowed endpoints are [Endpoint.ENTITIES, Endpoint.RELATIONSHIPS]");
+				throw new NoSuchEndpointException("WrongEndpointSelectionException: allowed endpoints are [Endpoint.ENTITIES, Endpoint.RELATIONSHIPS]");
 			}
 
 			if (set.size() == 2500) {
 				counter += set.size(); // increment global counter
 				executor.execute(writeObject(endpoint.name(), new HashSet<>(set), index.incrementAndGet()));
 				set = new HashSet<>();
-				logger.info("Fechted " + counter + ", missing " + (completeListSize.intValue() - counter) + " "
-						+ endpoint.name());
+				logger.info("Fechted " + counter + ", missing " + (completeListSize.intValue() - counter) + " " + endpoint.name());
 			}
 
 			HttpURLConnection connectionFor = GentleUtils.getConnectionFor(endpoint.listRecords(resumptionToken.getValue()));
@@ -175,13 +173,13 @@ public class GentleTripleGrabber {
 		}
 
 		counter += set.size(); // last increment of global counter
-		executor.execute(writeObject(endpoint.name(), new HashSet<>(set), index.incrementAndGet())); // save
-																										// data
-																										// chunk
+		
+		// save data chunk
+		executor.execute(writeObject(endpoint.name(), new HashSet<>(set), index.incrementAndGet())); 
+		
 		executor.shutdown();
-		executor.awaitTermination(3000, TimeUnit.MILLISECONDS); // wait until
-																// files are
-																// written
+		// wait until files are written
+		executor.awaitTermination(3000, TimeUnit.MILLISECONDS); 
 
 		boolean b = completeListSize.intValue() == counter;
 		int missing = b ? 0 : (completeListSize.intValue() - counter);
