@@ -40,7 +40,7 @@ import de.prometheus.bildarchiv.beans.Work;
 public class GentleDataExtractor {
 
 	private static final Logger logger = LogManager.getLogger(GentleDataExtractor.class);
-	
+
 	private File importFile;
 	
 	private Set<ExtendedRelationship> relationships;
@@ -67,13 +67,13 @@ public class GentleDataExtractor {
 	private Set<ExtendedRelationship> schuelerInVon;
 	private Set<ExtendedRelationship> auftraggeberVonWerk;
 	private Set<ExtendedRelationship> ausstellungskatalogZu;
-
-	public GentleDataExtractor(File importFile) {
+	
+	public GentleDataExtractor(File importFile, boolean init) {
 		
 		this.importFile = importFile;
 		
 		try {
-			init();
+			if(init) init();
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();
 		} catch (InterruptedException e) {
@@ -83,38 +83,39 @@ public class GentleDataExtractor {
 		} catch (JAXBException e) {
 			e.printStackTrace();
 		}
+		
 	}
 	
 	private void init() throws FileNotFoundException, InterruptedException, ExecutionException, JAXBException {
 		
-		logger.info("init-method called... filtering relationships");
+		logger.info("init-method called... filtering relationships from endpoint \"relation\" ");
 		
 		this.relationships = getRelationships(importFile);
-		this.befindetSichIn = filteredRelationships(relationships, Relations.befindetSichIn);
-		this.hatGeschaffen = filteredRelationships(relationships, Relations.hatGeschaffen);
-		this.basisdatenZumWerkAus = filteredRelationships(relationships, Relations.basisdatenZumWerkAus);
-		this.literaturEnthaeltBilddatei = filteredRelationships(relationships, Relations.literaturEnthaeltBilddatei);
-		this.geburtsortVon = filteredRelationships(relationships, Relations.geburtsortVon);
-		this.sterbeOrt = filteredRelationships(relationships, Relations.sterbeOrt);
-		this.institutionInOrt = filteredRelationships(relationships, Relations.institutionInOrt);
-		this.verwertungsrechtAmFoto = filteredRelationships(relationships, Relations.verwertungsrechtAmFoto);
-		this.stehtInVerbindungZu = filteredRelationships(relationships, Relations.stehtInVerbindungZu);
-		this.stelltDar = filteredRelationships(relationships, Relations.stelltDar);
-		this.fotografiertVon = filteredRelationships(relationships, Relations.fotografiertVon);
-		this.ausgestellteWerke = filteredRelationships(relationships, Relations.ausgestellteWerke);
-		this.kuratiertVon = filteredRelationships(relationships, Relations.kuratiertVon);
-		this.wurdeGezeigtIn = filteredRelationships(relationships, Relations.wurdeGezeigtIn);
-		this.autorInVon = filteredRelationships(relationships, Relations.autorInVon);
-		this.herausgeberInVon = filteredRelationships(relationships, Relations.herausgeberInVon);
-		this.erschienenIn = filteredRelationships(relationships, Relations.erschienenIn);
-		this.sammlungskatalog = filteredRelationships(relationships, Relations.sammlungskatalog);
-		this.bilddateiZuWerk = filteredRelationships(relationships, Relations.bilddateiZuWerk);
-		this.istTeilVonB = filteredRelationships(relationships, Relations.istTeilVonB);
-		this.schuelerInVon = filteredRelationships(relationships, Relations.schuelerInVon);
-		this.auftraggeberVonWerk = filteredRelationships(relationships, Relations.auftraggeberVonWerk);
-		this.ausstellungskatalogZu = filteredRelationships(relationships, Relations.ausstellungskatalogZu);
+		this.befindetSichIn = filterRelationships(relationships, Relations.befindetSichIn);
+		this.hatGeschaffen = filterRelationships(relationships, Relations.hatGeschaffen);
+		this.basisdatenZumWerkAus = filterRelationships(relationships, Relations.basisdatenZumWerkAus);
+		this.literaturEnthaeltBilddatei = filterRelationships(relationships, Relations.literaturEnthaeltBilddatei);
+		this.geburtsortVon = filterRelationships(relationships, Relations.geburtsortVon);
+		this.sterbeOrt = filterRelationships(relationships, Relations.sterbeOrt);
+		this.institutionInOrt = filterRelationships(relationships, Relations.institutionInOrt);
+		this.verwertungsrechtAmFoto = filterRelationships(relationships, Relations.verwertungsrechtAmFoto);
+		this.stehtInVerbindungZu = filterRelationships(relationships, Relations.stehtInVerbindungZu);
+		this.stelltDar = filterRelationships(relationships, Relations.stelltDar);
+		this.fotografiertVon = filterRelationships(relationships, Relations.fotografiertVon);
+		this.ausgestellteWerke = filterRelationships(relationships, Relations.ausgestellteWerke);
+		this.kuratiertVon = filterRelationships(relationships, Relations.kuratiertVon);
+		this.wurdeGezeigtIn = filterRelationships(relationships, Relations.wurdeGezeigtIn);
+		this.autorInVon = filterRelationships(relationships, Relations.autorInVon);
+		this.herausgeberInVon = filterRelationships(relationships, Relations.herausgeberInVon);
+		this.erschienenIn = filterRelationships(relationships, Relations.erschienenIn);
+		this.sammlungskatalog = filterRelationships(relationships, Relations.sammlungskatalog);
+		this.bilddateiZuWerk = filterRelationships(relationships, Relations.bilddateiZuWerk);
+		this.istTeilVonB = filterRelationships(relationships, Relations.istTeilVonB);
+		this.schuelerInVon = filterRelationships(relationships, Relations.schuelerInVon);
+		this.auftraggeberVonWerk = filterRelationships(relationships, Relations.auftraggeberVonWerk);
+		this.ausstellungskatalogZu = filterRelationships(relationships, Relations.ausstellungskatalogZu);
 		
-		logger.info("init-method called... done!");
+		logger.info("init-procedure done!");
 	}
 
 	// Ausstellung
@@ -214,38 +215,41 @@ public class GentleDataExtractor {
 		return literatureObject;
 	}
 
-	// Medium
-	public static Medium getMedium(Entity medium, Set<ExtendedRelationship> geburtsortVon, Set<ExtendedRelationship> sterbeOrt,
+	// Mediums
+	public static List<Medium> getMediums(final String workId, Set<ExtendedRelationship> bilddateiZuWerk, Set<ExtendedRelationship> geburtsortVon, Set<ExtendedRelationship> sterbeOrt,
 			Set<ExtendedRelationship> institutionInOrt, Set<ExtendedRelationship> verwertungsrechtAmFoto,
 			Set<ExtendedRelationship> fotografiertVon, Set<ExtendedRelationship> schuelerInVon, boolean p) {
-		String imagePath = null;
-		// TODO: java.lang.NullPointerException on getImagePath().getValue()
-		// "St. Marien-Kirche" siehe: https://kor.uni-frankfurt.de/blaze#/entities/298542
-		if(medium.getImagePath() == null) imagePath = "unknown";
-		else imagePath = medium.getImagePath().getValue();
-		if(p) System.out.println("\t\t\tm:" + medium.getImagePath().getValue());
-		
-		Medium mediumObject = new Medium(medium); 
-		mediumObject.setExploitationRight(new Institution()); // rights holder
-		mediumObject.setPhotographers(new ArrayList<>()); // photographer
-		// Medium Verwertungsrechte liegen bei Institution
-		List<ExtendedRelationship> rechtAmFoto = verwertungsrechtAmFoto.stream().filter(x -> x.getFrom().getId().equals(medium.getId())).collect(Collectors.toList());
-		if(rechtAmFoto.size() > 0) {
-			Entity rights = rechtAmFoto.get(0).getTo();
-			mediumObject.setExploitationRight(getInstitution(rights, institutionInOrt)); // 
-			if(p) System.out.println("\t\t\tm_: Verwertungsrecht am Foto " + rights.getTitle() + ")");
+
+		Set<ExtendedRelationship> mediumSet = bilddateiZuWerk.stream().filter(x -> x.getTo().getId().equals(workId)).collect(Collectors.toSet());
+		Set<Medium> mediums = new HashSet<>();
+		for (ExtendedRelationship extendedRelationship : mediumSet) {
+			if (extendedRelationship.getFrom().getImagePath() == null) 
+				continue;
+			Entity medium = extendedRelationship.getFrom();
+			Medium mediumObject = new Medium(medium); 
+			mediumObject.setExploitationRight(new Institution()); // rights holder
+			mediumObject.setPhotographers(new ArrayList<>()); // photographer
+			// Medium Verwertungsrechte liegen bei Institution
+			List<ExtendedRelationship> rechtAmFoto = verwertungsrechtAmFoto.stream().filter(x -> x.getFrom().getId().equals(medium.getId())).collect(Collectors.toList());
+			if(rechtAmFoto.size() > 0) {
+				Entity rights = rechtAmFoto.get(0).getTo();
+				mediumObject.setExploitationRight(getInstitution(rights, institutionInOrt)); // 
+				if(p) System.out.println("\t\t\tm_: Verwertungsrecht am Foto " + rights.getTitle() + ")");
+			}
+			// (Medium) fotografiert von (Person)
+			List<Person> photographers = new ArrayList<>();
+			List<ExtendedRelationship> mediumPerson = fotografiertVon.stream().filter(x -> x.getFrom().getId().equals(medium.getId())).collect(Collectors.toList());
+			mediumPerson.forEach(mp -> {
+				Entity photographerEntity = mp.getTo();
+				Person photographerObject = getPerson(photographerEntity, geburtsortVon, sterbeOrt, schuelerInVon, false, 0);
+				photographers.add(photographerObject);
+			});
+			mediumObject.setPhotographers(photographers); // set photographers
+			// System.out.println("work_id=" + workId + ", medium=" + mediumObject.getImagePath());
+			mediums.add(mediumObject);
 		}
-		// (Medium) fotografiert von (Person)
-		List<Person> photographers = new ArrayList<>();
-		List<ExtendedRelationship> mediumPerson = fotografiertVon.stream().filter(x -> x.getFrom().getId().equals(medium.getId())).collect(Collectors.toList());
-		mediumPerson.forEach(mp -> {
-			Entity photographerEntity = mp.getTo();
-			Person photographerObject = getPerson(photographerEntity, geburtsortVon, sterbeOrt, schuelerInVon, false, 0);
-			photographers.add(photographerObject);
-		});
-		mediumObject.setPhotographers(photographers); // set photographers
 		
-		return mediumObject;
+		return new ArrayList<>(mediums);
 	}
 
 	// Institution
@@ -301,8 +305,7 @@ public class GentleDataExtractor {
 		return personObject;
 	}
 
-	private static Set<ExtendedRelationship> filteredRelationships(Set<ExtendedRelationship> relationships,
-			final String id) {
+	public static Set<ExtendedRelationship> filterRelationships(Set<ExtendedRelationship> relationships, final String id) {
 		return relationships.stream().filter(r -> r.getRelation().getId().equals(id)).collect(Collectors.toSet());
 	}
 
@@ -312,7 +315,7 @@ public class GentleDataExtractor {
 		return prom.getRelations();
 	}
 
-	private Prometheus load(final String xmlFile) throws JAXBException, FileNotFoundException {
+	public static Prometheus load(final String xmlFile) throws JAXBException, FileNotFoundException {
 		JAXBContext jaxbContext = JAXBContext.newInstance(Prometheus.class);
 		Unmarshaller jaxbUnmarshaller = jaxbContext.createUnmarshaller();
 		StreamSource streamSource = new StreamSource(new BufferedInputStream(new FileInputStream(new File(xmlFile))));
@@ -338,20 +341,9 @@ public class GentleDataExtractor {
 				workObject.setSubtype(workEntity.getSubType());
 			}
 			
-//			workObject.setImage(new Medium()); // #1
-//			workObject.setCreators(new ArrayList<>()); // #2
-//			workObject.setIllustrations(new ArrayList<>()); // #3
-//			workObject.setExhibitions(new ArrayList<>()); // #4
-//			workObject.setLocatedIn(new Institution()); // #5
-//			workObject.setCommissioner(new Person()); // #6
-//			workObject.setConnectionsTo(new ArrayList<>()); // #7
-//			workObject.setPartsOf(new ArrayList<>()); // #8
-//			workObject.setPortrayal(new Person()); // #9
-			
 			// #1
-			Medium mediumObject = getMedium(mediumEntity, geburtsortVon, sterbeOrt, institutionInOrt, verwertungsrechtAmFoto, fotografiertVon, schuelerInVon, false);
-			workObject.setImage(mediumObject);
-			// System.out.println("work_: " + mw.getTo().getTitle() + " (" + mediumObject.getImagePath() + ")");
+			List<Medium> mediumObjects = getMediums(workEntity.getId(), bilddateiZuWerk, geburtsortVon, sterbeOrt, institutionInOrt, verwertungsrechtAmFoto, fotografiertVon, schuelerInVon, false);
+			workObject.setMediums(mediumObjects);
 			
 			// #2
 			List<Person> creators = new ArrayList<>();
@@ -360,7 +352,6 @@ public class GentleDataExtractor {
 				Entity creatorEntity = pw.getFrom();
 				Person creatorObject = getPerson(creatorEntity, geburtsortVon, sterbeOrt, schuelerInVon, false, 0);
 				creators.add(creatorObject);
-				// System.out.println("\tcreator_: " + creatorObject.getTitle());
 			});
 			workObject.setCreators(creators);
 			
@@ -373,7 +364,6 @@ public class GentleDataExtractor {
 						verwertungsrechtAmFoto, fotografiertVon, autorInVon, herausgeberInVon, erschienenIn,
 						sammlungskatalog, schuelerInVon);
 				illustrations.add(literatureObject);
-				// System.out.println("\tliterature_: " + literatureObject.getTitle());
 			});
 			workObject.setIllustrations(illustrations);
 			
@@ -386,7 +376,6 @@ public class GentleDataExtractor {
 						verwertungsrechtAmFoto, fotografiertVon, kuratiertVon, wurdeGezeigtIn, autorInVon,
 						herausgeberInVon, erschienenIn, sammlungskatalog, schuelerInVon, ausstellungskatalogZu);
 				exhibitions.add(exhibitionObject);
-				// System.out.println("\texhibition_: " + exhibitionObject.getTitle());
 			});
 			workObject.setExhibitions(exhibitions);
 			
@@ -397,7 +386,6 @@ public class GentleDataExtractor {
 				Entity institutionEntity = locations.get(0).getTo();
 				Institution institutionObject = getInstitution(institutionEntity, institutionInOrt);
 				workObject.setLocatedIn(institutionObject);
-				// System.out.println("\tinstitution_: " + institutionObject.getTitle());
 			}
 			// (Person) ist Auftraggeber von (Werk)
 			List<ExtendedRelationship> commissioners = auftraggeberVonWerk.stream().filter(x -> x.getTo().getId().equals(workEntity.getId())).collect(Collectors.toList());
@@ -406,7 +394,6 @@ public class GentleDataExtractor {
 				Entity commissionerEntity = commissioners.get(0).getFrom();
 				Person commissionerObject = getPerson(commissionerEntity, geburtsortVon, sterbeOrt, schuelerInVon, false, 0);
 				workObject.setCommissioner(commissionerObject);
-				// System.out.println("\tcommissioner_: " + commissionerObject.getTitle());
 			}
 			// (Werk) steht in Verbindung zu (Werk)
 			List<ExtendedRelationship> connections = stehtInVerbindungZu.stream().filter(x -> x.getTo().getId().equals(workEntity.getId())).collect(Collectors.toList());
@@ -417,7 +404,6 @@ public class GentleDataExtractor {
 					relations.add(c.getTo().getId());
 				}
 				workObject.setConnectionsTo(relations);
-				// System.out.println("\tconnections_: " + connections.size());
 			}
 			// (Werk) ist Teil von (Werk)
 			List<ExtendedRelationship> parts = istTeilVonB.stream().filter(x -> x.getFrom().getId().equals(workEntity.getId())).collect(Collectors.toList());
@@ -430,7 +416,6 @@ public class GentleDataExtractor {
 					relations.add(partOf);
 				}
 				workObject.setPartsOf(relations);
-				// System.out.println("\tparts_: " + parts.size());
 			}
 			// (Werk) stellt dar (Person)
 			List<ExtendedRelationship> portrayals = stelltDar.stream().filter(x -> x.getFrom().getId().equals(workEntity.getId())).collect(Collectors.toList());
@@ -439,7 +424,6 @@ public class GentleDataExtractor {
 				Entity portrayal = portrayals.get(0).getTo();
 				Person portrayalObject = getPerson(portrayal, geburtsortVon, sterbeOrt, schuelerInVon, false, 0);
 				workObject.setPortrayal(portrayalObject);
-				// System.out.println("\tportrayal_: " + portrayalObject.getTitle());
 			}
 			
 			works.add(workObject); // collect work object
@@ -449,15 +433,15 @@ public class GentleDataExtractor {
 		PrometheusImport imports = new PrometheusImport();
 		imports.setWorks(works);
 		
-		logger.info("creating file ..._ffm_final_import.xml");
+		logger.info("creating file *_conedakor_dump.xml");
 		
 		JAXBContext jaxbContext = JAXBContext.newInstance(PrometheusImport.class);
 		JAXBElement<PrometheusImport> element = new JAXBElement<PrometheusImport>(
-				new QName("http://www.prometheus-bildarchiv.de/", "ffm_import"), PrometheusImport.class, imports);
+				new QName("http://www.prometheus-bildarchiv.de/", "conedaKorData"), PrometheusImport.class, imports);
 
 		Marshaller marshaller = jaxbContext.createMarshaller();
 		marshaller.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, true);
-		marshaller.marshal(element, new File(importFile.getParent(), DateFormatUtils.format(new Date(), "dd-MM-yyyy") + "_ffm_final_import.xml"));
+		marshaller.marshal(element, new File(importFile.getParent(), DateFormatUtils.format(new Date(), "dd-MM-yyyy") + "_conedakor_dump.xml"));
 		logger.info("data extraction finished!");
 	}
 
