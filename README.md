@@ -1,8 +1,15 @@
 # ffm-import
 A gentle command line tool for harvesting OAI-PMH XML data provided by <a href="https://github.com/coneda/kor">ConedaKOR</a> (Frankfurt)  
   
+Building the jar file (ffm.jar) with Maven:  
+<code>$ cd /ffm-import/</code>  
+<code>$ mvn clean install</code>
+  
+The generated jar file is located under <code>/ffm-import/target/ffm-import-jar-with-dependencies.jar</code>  
+Rename the file from <code>ffm-import-jar-with-dependencies.jar</code> to <code>ffm.jar</code>.
+  
 Running the programm:  
-<code>-Xms1g -Xmx2g -Dlog4j.configurationFile=/path/to/log4j2.xml -jar ffm.jar -d /path/to/output/folder/</code>
+<code>$ java -Xms1g -Xmx2g -Dlog4j.configurationFile=/path/to/log4j2.xml -jar ffm.jar -d /path/to/output/folder/</code>
 
   
 ## Current data model  
