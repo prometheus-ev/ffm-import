@@ -28,6 +28,9 @@ public class Basic implements Serializable {
 	private Tags tags;
 	private Properties properties;
 	private Fields fields;
+	private String creator;
+	private String site; // Standort
+	
 	
 	public Basic() { }
 	
@@ -156,9 +159,23 @@ public class Basic implements Serializable {
 	public void setFields(Fields fields) {
 		this.fields = fields;
 	}
+	
+	public String getCreator() {
+		return creator;
+	}
 
-	
-	
+	public void setCreator(String creator) {
+		this.creator = creator;
+	}
+
+	public String getSite() {
+		return site;
+	}
+
+	public void setSite(String site) {
+		this.site = site;
+	}
+
 	@Override
 	public int hashCode() {
 		final int prime = 31;

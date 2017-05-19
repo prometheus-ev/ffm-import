@@ -63,7 +63,7 @@ public class GentleDataExtractor {
 	private Set<ExtendedRelationship> erschienenIn;
 	private Set<ExtendedRelationship> sammlungskatalog;
 	private Set<ExtendedRelationship> bilddateiZuWerk;
-	private Set<ExtendedRelationship> istTeilVonB;
+	private Set<ExtendedRelationship> istTeilVon;
 	private Set<ExtendedRelationship> schuelerInVon;
 	private Set<ExtendedRelationship> auftraggeberVonWerk;
 	private Set<ExtendedRelationship> ausstellungskatalogZu;
@@ -110,7 +110,7 @@ public class GentleDataExtractor {
 		this.erschienenIn = filterRelationships(relationships, Relations.erschienenIn);
 		this.sammlungskatalog = filterRelationships(relationships, Relations.sammlungskatalog);
 		this.bilddateiZuWerk = filterRelationships(relationships, Relations.bilddateiZuWerk);
-		this.istTeilVonB = filterRelationships(relationships, Relations.istTeilVonB);
+		this.istTeilVon = filterRelationships(relationships, Relations.istTeilVon);
 		this.schuelerInVon = filterRelationships(relationships, Relations.schuelerInVon);
 		this.auftraggeberVonWerk = filterRelationships(relationships, Relations.auftraggeberVonWerk);
 		this.ausstellungskatalogZu = filterRelationships(relationships, Relations.ausstellungskatalogZu);
@@ -406,12 +406,15 @@ public class GentleDataExtractor {
 				workObject.setConnectionsTo(relations);
 			}
 			// (Werk) ist Teil von (Werk)
-			List<ExtendedRelationship> parts = istTeilVonB.stream().filter(x -> x.getFrom().getId().equals(workEntity.getId())).collect(Collectors.toList());
+			List<ExtendedRelationship> parts = istTeilVon.stream().filter(x -> x.getFrom().getId().equals(workEntity.getId())).collect(Collectors.toList());
 			// #8
 			if(parts.size() > 0) {
 				List<Basic> relations = new ArrayList<>();
 				for (ExtendedRelationship c : parts) {
 					Basic partOf = new Basic(c.getTo());
+					
+					// TODO: Add site, and creator information...
+					
 					// relations.add(c.getTo().getId());
 					relations.add(partOf);
 				}

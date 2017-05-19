@@ -14,7 +14,7 @@ import org.openarchives.beans.RecordType;
 import org.openarchives.beans.Relation;
 
 public final class Relations {
-	
+
 	public static final String wurdeGezeigtIn = "221611b8-d627-42ee-baeb-4ba093a69a44";
 	public static final String mitgliedVon = "39f259c4-eda7-4849-936b-acc974eb0a7a";
 	public static final String hatSchwester = "4dd97871-c4c2-4008-a6ef-0ed8e97d2f02";
@@ -42,7 +42,7 @@ public final class Relations {
 	public static final String zugehoerigePublikationen = "849c07ec-5169-4773-baeb-2f1ea6e358a2";
 	public static final String ausgestellteWerke = "7931901e-f783-4873-8415-a439a1fe8bcf";
 	public static final String standortIn = "977e5f29-2faf-403d-b541-92e6cb4cc479";
-	public static final String istTeilVonA = "c4ac71ea-df47-4c8e-869b-f1d82c8cc07b";
+	public static final String istTeilVon = "8554ee75-43ac-4c42-9d38-1b18d3e0c37a";
 	public static final String geburtsortVon = "57ec1a76-09b3-4480-a563-a4217189ec1e";
 	public static final String hatDatei = "ce0cb47f-d72d-45ad-9bbd-4170474ceb85";
 	public static final String sammlungskatalog = "ed70502e-ea02-4a00-989c-a59f7b47a7c6";
@@ -51,7 +51,6 @@ public final class Relations {
 	public static final String hatMutter = "f110ac4a-6178-4f17-881e-c5d69a1f79b7";
 	public static final String zugehoerigeInformation = "5e162aa9-9989-4089-849a-130384dc3a3c";
 	public static final String zugehoerigeMedien = "0f7eb576-7e9b-41f9-ad68-14ae082fea58";
-	public static final String istTeilVonB = "8554ee75-43ac-4c42-9d38-1b18d3e0c37a";
 	public static final String herausgeberInVon = "360f76df-c2bc-42eb-b4ad-aaf40f39b56d";
 	public static final String hatBruder = "6ee3536e-cf77-40a2-909a-7bd2b52753df";
 	public static final String stehtInVerbindungZu = "5b9bcb28-9eb9-4f5e-80b8-b2ee34be69d1";
@@ -61,7 +60,7 @@ public final class Relations {
 	public static final String auftraggeberVonWerk = "97b01978-e9f3-437a-851a-b37e3253ccec";
 
 	private Relations() {
-		
+
 	}
 
 	public static void main(String[] args) throws IOException, JAXBException {
@@ -73,7 +72,7 @@ public final class Relations {
 			System.out.println(recordType.getMetadata().getRelation());
 		}
 	}
-	
+
 	public static Set<Relation> getRelations() throws IOException, JAXBException {
 		String listRecords = Endpoint.RELATIONS.listRecords();
 		HttpURLConnection c = GentleUtils.getConnectionFor(listRecords);
