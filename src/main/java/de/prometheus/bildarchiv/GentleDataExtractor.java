@@ -27,11 +27,11 @@ import org.openarchives.beans.Entity;
 import org.openarchives.beans.ExtendedRelationship;
 import org.openarchives.beans.Prometheus;
 
-import de.prometheus.bildarchiv.beans.Basic;
 import de.prometheus.bildarchiv.beans.Exhibition;
 import de.prometheus.bildarchiv.beans.Institution;
 import de.prometheus.bildarchiv.beans.Literature;
 import de.prometheus.bildarchiv.beans.Medium;
+import de.prometheus.bildarchiv.beans.PartOf;
 import de.prometheus.bildarchiv.beans.Person;
 import de.prometheus.bildarchiv.beans.Place;
 import de.prometheus.bildarchiv.beans.PrometheusImport;
@@ -67,6 +67,11 @@ public class GentleDataExtractor {
 	private Set<ExtendedRelationship> schuelerInVon;
 	private Set<ExtendedRelationship> auftraggeberVonWerk;
 	private Set<ExtendedRelationship> ausstellungskatalogZu;
+	
+	public static void main(String[] args) throws JAXBException {
+		GentleDataExtractor gentleDataExtractor = new GentleDataExtractor(new File("/Users/matana/Desktop/conedaKor/28-03-2017_ffm_export.xml"), true);
+		gentleDataExtractor.getAndStoreData();
+	}
 	
 	public GentleDataExtractor(File importFile, boolean init) {
 		
@@ -409,11 +414,30 @@ public class GentleDataExtractor {
 			List<ExtendedRelationship> parts = istTeilVon.stream().filter(x -> x.getFrom().getId().equals(workEntity.getId())).collect(Collectors.toList());
 			// #8
 			if(parts.size() > 0) {
-				List<Basic> relations = new ArrayList<>();
+				List<PartOf> relations = new ArrayList<>();
 				for (ExtendedRelationship c : parts) {
-					Basic partOf = new Basic(c.getTo());
+					PartOf partOf = new PartOf(c.getTo());
 					
-					// TODO: Add site, and creator information...
+					// TODO: Add creators information...
+					List<String> creatorNames = new ArrayList<>();
+					Set<ExtendedRelationship> per = hatGeschaffen.stream().filter(x -> x.getTo().getId().equals(partOf.getId())).collect(Collectors.toSet());
+					per.forEach(pw -> {
+						Entity creatorEntity = pw.getFrom();
+						Person creatorObject = getPerson(creatorEntity, geburtsortVon, sterbeOrt, schuelerInVon, false, 0);
+						creatorNames.add(creatorObject.getTitle());
+						//System.out.println(creatorObject.getTitle());
+					});
+					partOf.setCreators(creatorNames);
+					
+					// TODO: Add location information...
+					List<ExtendedRelationship> loc = befindetSichIn.stream().filter(x -> x.getFrom().getId().equals(partOf.getId())).collect(Collectors.toList());
+					if(loc.size() > 0) {
+						Entity institutionEntity = loc.get(0).getTo();
+						Institution institutionObject = getInstitution(institutionEntity, institutionInOrt);
+						workObject.setLocatedIn(institutionObject);
+						//System.out.println(institutionObject.getTitle());
+						partOf.setLocation(institutionObject.getTitle());
+					}
 					
 					// relations.add(c.getTo().getId());
 					relations.add(partOf);
@@ -430,6 +454,7 @@ public class GentleDataExtractor {
 			}
 			
 			works.add(workObject); // collect work object
+			System.out.println("added new work object '" + workObject.getTitle() + "' left " + (bilddateiZuWerk.size() - works.size()));
 			logger.info("added new work object '" + workObject.getTitle() + "' left " + (bilddateiZuWerk.size() - works.size()));
 		}
 		
