@@ -3,6 +3,9 @@ package de.prometheus.bildarchiv.beans;
 import java.util.ArrayList;
 import java.util.List;
 
+import javax.xml.bind.annotation.XmlElement;
+import javax.xml.bind.annotation.XmlElementWrapper;
+
 import org.openarchives.beans.Entity;
 
 import com.google.gson.Gson;
@@ -12,13 +15,17 @@ public class Work extends Basic {
 
 	private static final long serialVersionUID = 5113927173240646123L;
 	private String subtype;
+	@XmlElementWrapper(name="mediums")
+	@XmlElement(name = "medium")
 	private List<Medium> mediums = new ArrayList<>();
 	private List<Person> creators;
 	private Person commissioner;
 	private Person portrayal;
 	private Institution locatedIn;
 	private List<String> connectionsTo; // work.id
-	private List<PartOf> partsOf; // work.id
+	@XmlElementWrapper(name="parts")
+	@XmlElement(name = "part")
+	private List<Part> parts;
 	private List<Literature> illustrations;
 	private List<Exhibition> exhibitions;
 
@@ -33,9 +40,9 @@ public class Work extends Basic {
 		super(entity);
 	}
 
-	public List<Medium> getMediums() {
-		return mediums;
-	}
+//	public List<Medium> getMediums() {
+//		return mediums;
+//	}
 	
 	public void setMediums(List<Medium> mediums) {
 		this.mediums.addAll(mediums);
@@ -85,12 +92,12 @@ public class Work extends Basic {
 		this.connectionsTo = connectionsTo;
 	}
 
-	public List<PartOf> getPartsOf() {
-		return partsOf;
-	}
+//	public List<Part> getParts() {
+//		return parts;
+//	}
 
-	public void setPartsOf(List<PartOf> partsOf) {
-		this.partsOf = partsOf;
+	public void setParts(List<Part> parts) {
+		this.parts = parts;
 	}
 
 	public List<Literature> getIllustrations() {
@@ -121,7 +128,7 @@ public class Work extends Basic {
 	public String toString() {
 		return "Work [subtype=" + subtype + ", mediums=" + mediums + ", creators=" + creators + ", commissioner="
 				+ commissioner + ", portrayal=" + portrayal + ", locatedIn=" + locatedIn + ", connectionsTo="
-				+ connectionsTo + ", partsOf=" + partsOf + ", illustrations=" + illustrations + ", exhibitions="
+				+ connectionsTo + ", parts=" + parts + ", illustrations=" + illustrations + ", exhibitions="
 				+ exhibitions + "]";
 	}
 
