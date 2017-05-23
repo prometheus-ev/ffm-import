@@ -32,7 +32,7 @@ import de.prometheus.bildarchiv.beans.Exhibition;
 import de.prometheus.bildarchiv.beans.Institution;
 import de.prometheus.bildarchiv.beans.Literature;
 import de.prometheus.bildarchiv.beans.Medium;
-import de.prometheus.bildarchiv.beans.PartOf;
+import de.prometheus.bildarchiv.beans.Part;
 import de.prometheus.bildarchiv.beans.Person;
 import de.prometheus.bildarchiv.beans.Place;
 import de.prometheus.bildarchiv.beans.PrometheusImport;
@@ -259,8 +259,12 @@ public class GentleDataExtractor {
 		Institution institution = new Institution(cc);
 		institution.setLocation(new Place());
 		List<ExtendedRelationship> locations = filter(institutionInOrt, x -> x.getFrom().getId().equals(cc.getId()));
-		List<Entity> locs = locations.stream().map(ExtendedRelationship::getTo).collect(Collectors.toList());
-		institution.setLocation(new Place(locs.get(0)));
+		List<Entity> locs = locations.stream()
+				.map(ExtendedRelationship::getTo)
+				.collect(Collectors.toList());
+		if(locs.size() > 0) {
+			institution.setLocation(new Place(locs.get(0)));
+		}
 //		if(locations.size() > 0) {
 //			Entity loc = locations.get(0).getTo();
 //			Place locationObject = new Place(loc);
@@ -346,111 +350,168 @@ public class GentleDataExtractor {
 			workObject.setMediums(mediumObjects);
 			
 			// #2
-			List<Person> creators = new ArrayList<>();
-			Set<ExtendedRelationship> personWork = hatGeschaffen.stream().filter(x -> x.getTo().getId().equals(workEntity.getId())).collect(Collectors.toSet());
-			personWork.forEach(pw -> {
-				Entity creatorEntity = pw.getFrom();
-				Person creatorObject = getPerson(creatorEntity, geburtsortVon, sterbeOrt, schuelerInVon, false, 0);
-				creators.add(creatorObject);
-			});
+			Set<ExtendedRelationship> personWork = new HashSet<>(filter(hatGeschaffen, x -> x.getTo().getId().equals(workEntity.getId())));
+			
+			List<Person> creators = personWork.stream()
+				.map(ExtendedRelationship::getFrom)
+				.map(c -> getPerson(c, geburtsortVon, sterbeOrt, schuelerInVon, false, 0))
+				.collect(Collectors.toList());
+//			List<Person> creators = new ArrayList<>();
+//			personWork.forEach(pw -> {
+//				Entity creatorEntity = pw.getFrom();
+//				Person creatorObject = getPerson(creatorEntity, geburtsortVon, sterbeOrt, schuelerInVon, false, 0);
+//				creators.add(creatorObject);
+//			});
 			workObject.setCreators(creators);
 			
 			// #3
-			List<Literature> illustrations = new ArrayList<>();
-			Set<ExtendedRelationship> literatures = basisdatenZumWerkAus.stream().filter(x -> x.getFrom().getId().equals(workEntity.getId())).collect(Collectors.toSet());
-			literatures.forEach(wl -> {
-				Entity literatureEntity = wl.getTo();
-				Literature literatureObject = getLiterature(literatureEntity, literaturEnthaeltBilddatei, geburtsortVon, sterbeOrt, institutionInOrt,
+			Set<ExtendedRelationship> literatures = new HashSet<>(filter(basisdatenZumWerkAus, x -> x.getFrom().getId().equals(workEntity.getId())));
+			List<Literature> illustrations = literatures.stream()
+				.map(ExtendedRelationship::getTo)
+				.map(l -> getLiterature(l, literaturEnthaeltBilddatei, geburtsortVon, sterbeOrt, institutionInOrt,
 						verwertungsrechtAmFoto, fotografiertVon, autorInVon, herausgeberInVon, erschienenIn,
-						sammlungskatalog, schuelerInVon);
-				illustrations.add(literatureObject);
-			});
+						sammlungskatalog, schuelerInVon))
+				.collect(Collectors.toList());
+//			List<Literature> illustrations = new ArrayList<>();
+//			literatures.forEach(wl -> {
+//				Entity literatureEntity = wl.getTo();
+//				Literature literatureObject = getLiterature(literatureEntity, literaturEnthaeltBilddatei, geburtsortVon, sterbeOrt, institutionInOrt,
+//						verwertungsrechtAmFoto, fotografiertVon, autorInVon, herausgeberInVon, erschienenIn,
+//						sammlungskatalog, schuelerInVon);
+//				illustrations.add(literatureObject);
+//			});
 			workObject.setIllustrations(illustrations);
 			
 			// #4
-			List<Exhibition> exhibitions = new ArrayList<>();
-			List<ExtendedRelationship> werkAusstellung = ausgestellteWerke.stream().filter(x -> x.getTo().getId().equals(workEntity.getId())).collect(Collectors.toList());
-			werkAusstellung.forEach(wa -> {
-				Entity exhibitionEntity  = wa.getFrom();
-				Exhibition exhibitionObject = getExhibition(exhibitionEntity, literaturEnthaeltBilddatei, geburtsortVon, sterbeOrt, institutionInOrt,
+			List<ExtendedRelationship> werkAusstellung = filter(ausgestellteWerke, x -> x.getTo().getId().equals(workEntity.getId()));
+			List<Exhibition> exhibitions = werkAusstellung.stream()
+				.map(ExtendedRelationship::getFrom)
+				.map(e -> getExhibition(e, literaturEnthaeltBilddatei, geburtsortVon, sterbeOrt, institutionInOrt,
 						verwertungsrechtAmFoto, fotografiertVon, kuratiertVon, wurdeGezeigtIn, autorInVon,
-						herausgeberInVon, erschienenIn, sammlungskatalog, schuelerInVon, ausstellungskatalogZu);
-				exhibitions.add(exhibitionObject);
-			});
+						herausgeberInVon, erschienenIn, sammlungskatalog, schuelerInVon, ausstellungskatalogZu))
+				.collect(Collectors.toList());
+			
+//			List<Exhibition> exhibitions = new ArrayList<>();
+//			werkAusstellung.forEach(wa -> {
+//				Entity exhibitionEntity  = wa.getFrom();
+//				Exhibition exhibitionObject = getExhibition(exhibitionEntity, literaturEnthaeltBilddatei, geburtsortVon, sterbeOrt, institutionInOrt,
+//						verwertungsrechtAmFoto, fotografiertVon, kuratiertVon, wurdeGezeigtIn, autorInVon,
+//						herausgeberInVon, erschienenIn, sammlungskatalog, schuelerInVon, ausstellungskatalogZu);
+//				exhibitions.add(exhibitionObject);
+//			});
 			workObject.setExhibitions(exhibitions);
 			
-			// (Werk) befindet sich in (Institution)
-			List<ExtendedRelationship> locations = befindetSichIn.stream().filter(x -> x.getFrom().getId().equals(workEntity.getId())).collect(Collectors.toList());
-			// #5
+			// #5 (Werk) befindet sich in (Institution)
+			List<ExtendedRelationship> locations = filter(befindetSichIn, x -> x.getFrom().getId().equals(workEntity.getId()));
+//			List<Institution> collect = locations.stream()
+//				.map(ExtendedRelationship::getTo)
+//				.map(i -> getInstitution(i, institutionInOrt))
+//				.collect(Collectors.toList());
+			
 			if(locations.size() > 0) {
 				Entity institutionEntity = locations.get(0).getTo();
 				Institution institutionObject = getInstitution(institutionEntity, institutionInOrt);
 				workObject.setLocatedIn(institutionObject);
 			}
-			// (Person) ist Auftraggeber von (Werk)
-			List<ExtendedRelationship> commissioners = auftraggeberVonWerk.stream().filter(x -> x.getTo().getId().equals(workEntity.getId())).collect(Collectors.toList());
-			// #6
+			
+			// #6 (Person) ist Auftraggeber von (Werk)
+			List<ExtendedRelationship> commissioners = filter(auftraggeberVonWerk, x -> x.getTo().getId().equals(workEntity.getId()));
 			if(commissioners.size() > 0) {
 				Entity commissionerEntity = commissioners.get(0).getFrom();
 				Person commissionerObject = getPerson(commissionerEntity, geburtsortVon, sterbeOrt, schuelerInVon, false, 0);
 				workObject.setCommissioner(commissionerObject);
 			}
-			// (Werk) steht in Verbindung zu (Werk)
-			List<ExtendedRelationship> connections = stehtInVerbindungZu.stream().filter(x -> x.getTo().getId().equals(workEntity.getId())).collect(Collectors.toList());
-			// #7
-			if(connections.size() > 0 ) {
-				List<String> relations = new ArrayList<>();
-				for (ExtendedRelationship c : connections) {
-					relations.add(c.getTo().getId());
-				}
-				workObject.setConnectionsTo(relations);
-			}
-			// (Werk) ist Teil von (Werk)
-			List<ExtendedRelationship> parts = istTeilVon.stream().filter(x -> x.getFrom().getId().equals(workEntity.getId())).collect(Collectors.toList());
-			// #8
-			if(parts.size() > 0) {
-				List<PartOf> relations = new ArrayList<>();
-				for (ExtendedRelationship c : parts) {
-					PartOf partOf = new PartOf(c.getTo());
-					
-					// TODO: Add creators information...
-					List<String> creatorNames = new ArrayList<>();
-					Set<ExtendedRelationship> per = hatGeschaffen.stream().filter(x -> x.getTo().getId().equals(partOf.getId())).collect(Collectors.toSet());
-					per.forEach(pw -> {
-						Entity creatorEntity = pw.getFrom();
-						Person creatorObject = getPerson(creatorEntity, geburtsortVon, sterbeOrt, schuelerInVon, false, 0);
-						creatorNames.add(creatorObject.getTitle());
-						//System.out.println(creatorObject.getTitle());
-					});
-					partOf.setCreators(creatorNames);
-					
-					// TODO: Add location information...
-					List<ExtendedRelationship> loc = befindetSichIn.stream().filter(x -> x.getFrom().getId().equals(partOf.getId())).collect(Collectors.toList());
-					if(loc.size() > 0) {
-						Entity institutionEntity = loc.get(0).getTo();
-						Institution institutionObject = getInstitution(institutionEntity, institutionInOrt);
-						workObject.setLocatedIn(institutionObject);
-						//System.out.println(institutionObject.getTitle());
-						partOf.setLocation(institutionObject.getTitle());
-					}
-					
-					// relations.add(c.getTo().getId());
-					relations.add(partOf);
-				}
-				workObject.setPartsOf(relations);
-			}
-			// (Werk) stellt dar (Person)
-			List<ExtendedRelationship> portrayals = stelltDar.stream().filter(x -> x.getFrom().getId().equals(workEntity.getId())).collect(Collectors.toList());
-			// #9
+			
+			// #7 (Werk) steht in Verbindung zu (Werk)
+			List<ExtendedRelationship> connections = filter(stehtInVerbindungZu, x -> x.getTo().getId().equals(workEntity.getId()));
+			List<String> cons = connections.stream()
+				.map(ExtendedRelationship::getTo)
+				.map(Entity::getId)
+				.collect(Collectors.toList());
+			workObject.setConnectionsTo(cons);
+			
+//			if(connections.size() > 0 ) {
+//				List<String> relations = new ArrayList<>();
+//				for (ExtendedRelationship c : connections) {
+//					relations.add(c.getTo().getId());
+//				}
+//				workObject.setConnectionsTo(relations);
+//			}
+			// #8 (Werk) ist Teil von (Werk)
+			List<ExtendedRelationship> parts = filter(istTeilVon, x -> x.getFrom().getId().equals(workEntity.getId()));
+			List<Part> relations = new ArrayList<>();
+			parts.stream()
+				.map(ExtendedRelationship::getTo)
+				.map(e -> new Part(e))
+				.forEach(p -> {
+					Set<ExtendedRelationship> partOf = new HashSet<>(filter(hatGeschaffen, x -> x.getTo().getId().equals(p.getId())));
+					List<String> creatorNames = partOf.stream()
+						.map(ExtendedRelationship::getFrom)
+						.map(e -> getPerson(e, geburtsortVon, sterbeOrt, schuelerInVon, false, 0))
+						.map(Person::getTitle)
+						.collect(Collectors.toList());
+						p.setCreators(creatorNames); // Add creator names
+						
+					List<ExtendedRelationship> locRels = filter(befindetSichIn, x -> x.getFrom().getId().equals(p.getId()));
+					Set<String> locs = locRels.stream()
+						.map(ExtendedRelationship::getTo)
+						.map(l -> getInstitution(l, institutionInOrt))
+						.map(Institution::getTitle)
+						.collect(Collectors.toSet());
+					p.setLocation(locs); // Add location names
+					relations.add(p);
+				});
+			workObject.setParts(relations);
+			
+//			if(parts.size() > 0) {
+//				List<PartOf> relations = new ArrayList<>();
+//				for (ExtendedRelationship c : parts) {
+//					PartOf partOf = new PartOf(c.getTo());
+//					List<String> creatorNames = new ArrayList<>();
+//					Set<ExtendedRelationship> per = new HashSet<>(filter(hatGeschaffen, x -> x.getTo().getId().equals(partOf.getId())));
+//					per.forEach(pw -> {
+//						Entity creatorEntity = pw.getFrom();
+//						Person creatorObject = getPerson(creatorEntity, geburtsortVon, sterbeOrt, schuelerInVon, false, 0);
+//						creatorNames.add(creatorObject.getTitle());
+//						//System.out.println(creatorObject.getTitle());
+//					});
+//					partOf.setCreators(creatorNames);
+//					
+//					// TODO: Add location information...
+//					
+//					if(loc.size() > 0) {
+//						Entity institutionEntity = loc.get(0).getTo();
+//						Institution institutionObject = getInstitution(institutionEntity, institutionInOrt);
+//						// workObject.setLocatedIn(institutionObject);
+//						// System.out.println(institutionObject.getTitle());
+//						partOf.setLocation(institutionObject.getTitle());
+//					}
+//					
+//					// relations.add(c.getTo().getId());
+//					relations.add(partOf);
+//				}
+//				workObject.setPartsOf(relations);
+//			}
+			// #9 (Werk) stellt dar (Person)
+			List<ExtendedRelationship> portrayalsRel = filter(stelltDar, x -> x.getFrom().getId().equals(workEntity.getId()));
+			List<Person> portrayals = portrayalsRel.stream()
+				.map(ExtendedRelationship::getTo)
+				.map(p -> getPerson(p, geburtsortVon, sterbeOrt, schuelerInVon, false, 0))
+				.collect(Collectors.toList());
 			if(portrayals.size() > 0 ) {
-				Entity portrayal = portrayals.get(0).getTo();
-				Person portrayalObject = getPerson(portrayal, geburtsortVon, sterbeOrt, schuelerInVon, false, 0);
-				workObject.setPortrayal(portrayalObject);
+				workObject.setPortrayal(portrayals.get(0));
 			}
+			
+//			if(portrayalsRel.size() > 0 ) {
+//				Entity portrayal = portrayalsRel.get(0).getTo();
+//				Person portrayalObject = getPerson(portrayal, geburtsortVon, sterbeOrt, schuelerInVon, false, 0);
+//				workObject.setPortrayal(portrayalObject);
+//			}
 			
 			works.add(workObject); // collect work object
 			System.out.println("added new work object '" + workObject.getTitle() + "' left " + (bilddateiZuWerk.size() - works.size()));
 			logger.info("added new work object '" + workObject.getTitle() + "' left " + (bilddateiZuWerk.size() - works.size()));
+			
 		}
 		
 		PrometheusImport imports = new PrometheusImport();
