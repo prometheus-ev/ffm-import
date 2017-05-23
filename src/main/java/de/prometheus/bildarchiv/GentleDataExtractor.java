@@ -10,6 +10,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import javax.xml.bind.JAXBContext;
@@ -139,21 +140,21 @@ public class GentleDataExtractor {
 		exhibitionObject.setExhibitionVenue(new Place());
 		
 		// (Austellung) kuratiert von (Person)
-		List<ExtendedRelationship> ausstellungKuratiertVon = kuratiertVon.stream().filter(x -> x.getFrom().getId().equals(exhibitionEntity.getId())).collect(Collectors.toList());
+		List<ExtendedRelationship> ausstellungKuratiertVon = filter(kuratiertVon, x -> x.getFrom().getId().equals(exhibitionEntity.getId()));
 		if(ausstellungKuratiertVon.size() > 0) {
 			Entity curator = ausstellungKuratiertVon.get(0).getTo();
 			Person curatorObject = getPerson(curator, geburtsortVon, sterbeOrt, schuelerInVon, false, 0);
 			exhibitionObject.setCurator(curatorObject);
 		}
 		// (Austellung) wurde gezeigt in (Ort)
-		List<ExtendedRelationship> ausstellungWurdeGezeigtIn = wurdeGezeigtIn.stream().filter(x -> x.getFrom().getId().equals(exhibitionEntity.getId())).collect(Collectors.toList());
+		List<ExtendedRelationship> ausstellungWurdeGezeigtIn = filter(wurdeGezeigtIn, x -> x.getFrom().getId().equals(exhibitionEntity.getId()));
 		if(ausstellungWurdeGezeigtIn.size() > 0) {
 			Entity ev = ausstellungWurdeGezeigtIn.get(0).getTo();
 			Place exhibitionVenueObject = new Place(ev);
 			exhibitionObject.setExhibitionVenue(exhibitionVenueObject);;
 		}
 		// (Ausstellung) Ausstellungskatalog zu Ausstellung (Literatur)
-		List<ExtendedRelationship> ausstellungskatalogZuLit = ausstellungskatalogZu.stream().filter(x -> x.getTo().getId().equals(exhibitionEntity.getId())).collect(Collectors.toList());
+		List<ExtendedRelationship> ausstellungskatalogZuLit = filter(ausstellungskatalogZu, x -> x.getTo().getId().equals(exhibitionEntity.getId()));
 		if(ausstellungskatalogZuLit.size() > 0) {
 			Entity exhibitionCatalog  = ausstellungskatalogZuLit.get(0).getFrom();
 			Literature exhibitionCatalogObject = getLiterature(exhibitionCatalog, literaturEnthaeltBilddatei, geburtsortVon, sterbeOrt,
@@ -174,7 +175,6 @@ public class GentleDataExtractor {
 		
 		//System.out.println("\t\tl: " + literature.getTitle()); 
 		Literature literatureObject = new Literature(literature);
-		
 		literatureObject.setAuthor(new Person()); // author
 		literatureObject.setPublisher(new Person()); // publisher
 		literatureObject.setPublishedIn(new Place()); // published in location
@@ -182,21 +182,21 @@ public class GentleDataExtractor {
 		literatureObject.setMedia(new ArrayList<>()); // related media
 		
 		// Person ist Autor/in von Literatur
-		List<ExtendedRelationship> autorInVonLit = autorInVon.stream().filter(x -> x.getTo().getId().equals(literature.getId())).collect(Collectors.toList());
+		List<ExtendedRelationship> autorInVonLit = filter(autorInVon, x -> x.getTo().getId().equals(literature.getId()));
 		if(autorInVonLit.size() > 0) {
 			Entity author = autorInVonLit.get(0).getFrom();
 			literatureObject.setAuthor(getPerson(author, geburtsortVon, sterbeOrt, schuelerInVon, false, 0));
 			// System.out.println("\t\tl_: Autor/in " + author.getTitle());
 		}
 		// Person ist Herausgeberin/in von Literatur
-		List<ExtendedRelationship> herausgeberInVonLit = herausgeberInVon.stream().filter(x -> x.getTo().getId().equals(literature.getId())).collect(Collectors.toList());
+		List<ExtendedRelationship> herausgeberInVonLit = filter(herausgeberInVon, x -> x.getTo().getId().equals(literature.getId()));
 		if(herausgeberInVonLit.size() > 0) {
 			Entity publisher = herausgeberInVonLit.get(0).getFrom();
 			literatureObject.setPublisher(getPerson(publisher, geburtsortVon, sterbeOrt, schuelerInVon, false, 0));
 			// System.out.println("\t\tl_: Herausgeber/in " + publisher.getTitle());
 		}
 		// Literatur erschienen in Ort
-		List<ExtendedRelationship> erschienenInOrt = erschienenIn.stream().filter(x -> x.getFrom().getId().equals(literature.getId())).collect(Collectors.toList());
+		List<ExtendedRelationship> erschienenInOrt = filter(erschienenIn, x -> x.getFrom().getId().equals(literature.getId()));
 		if(erschienenInOrt.size() > 0)  {
 			Entity pi = erschienenInOrt.get(0).getTo();
 			Place publishedIn = new Place(pi);
@@ -204,19 +204,16 @@ public class GentleDataExtractor {
 			// System.out.println("\t\tl_: erschienen in " + pi.getTitle());
 		}
 		// Literatur Sammlungskatalog von Institution
-		List<ExtendedRelationship> sammlungskatalogInst = sammlungskatalog.stream().filter(x -> x.getFrom().getId().equals(literature.getId())).collect(Collectors.toList());
+		List<ExtendedRelationship> sammlungskatalogInst = filter(sammlungskatalog, x -> x.getFrom().getId().equals(literature.getId()));
 		if(sammlungskatalogInst.size() > 0)  {
 			Entity cc = sammlungskatalogInst.get(0).getTo();
 			literatureObject.setCollectionCatalog(getInstitution(cc, institutionInOrt));
 			// System.out.println("\t\tl_: Sammlungskatalog von " + cc.getTitle());
 		}
 		// (Literatur) Literatur enthält Bilddatei (Medium)
-		Set<ExtendedRelationship> media = literaturEnthaeltBilddatei.stream().filter(x -> x.getFrom().getId().equals(literature.getId())).collect(Collectors.toSet());
-		Set<String> mediums = new HashSet<>();
-		for (ExtendedRelationship medium : media) {
-			mediums.add(medium.getTo().getId()); // collect media
-		}
-		literatureObject.setMedia(new ArrayList<>(mediums)); // set media
+		Set<ExtendedRelationship> media = new HashSet<>(filter(literaturEnthaeltBilddatei, x -> x.getFrom().getId().equals(literature.getId())));
+		List<String> mediums = media.stream().map(ExtendedRelationship::getTo).map(Entity::getId).collect(Collectors.toList());
+		literatureObject.setMedia(mediums); // set media
 		return literatureObject;
 	}
 
@@ -225,8 +222,8 @@ public class GentleDataExtractor {
 			Set<ExtendedRelationship> institutionInOrt, Set<ExtendedRelationship> verwertungsrechtAmFoto,
 			Set<ExtendedRelationship> fotografiertVon, Set<ExtendedRelationship> schuelerInVon, boolean p) {
 
-		Set<ExtendedRelationship> mediumSet = bilddateiZuWerk.stream().filter(x -> x.getTo().getId().equals(workId)).collect(Collectors.toSet());
-		Set<Medium> mediums = new HashSet<>();
+		Set<ExtendedRelationship> mediumSet = new HashSet<>(filter(bilddateiZuWerk, x -> x.getTo().getId().equals(workId)));
+		List<Medium> mediums = new ArrayList<>();
 		for (ExtendedRelationship extendedRelationship : mediumSet) {
 			if (extendedRelationship.getFrom().getImagePath() == null) 
 				continue;
@@ -235,7 +232,7 @@ public class GentleDataExtractor {
 			mediumObject.setExploitationRight(new Institution()); // rights holder
 			mediumObject.setPhotographers(new ArrayList<>()); // photographer
 			// Medium Verwertungsrechte liegen bei Institution
-			List<ExtendedRelationship> rechtAmFoto = verwertungsrechtAmFoto.stream().filter(x -> x.getFrom().getId().equals(medium.getId())).collect(Collectors.toList());
+			List<ExtendedRelationship> rechtAmFoto = filter(verwertungsrechtAmFoto, x -> x.getFrom().getId().equals(medium.getId()));
 			if(rechtAmFoto.size() > 0) {
 				Entity rights = rechtAmFoto.get(0).getTo();
 				mediumObject.setExploitationRight(getInstitution(rights, institutionInOrt)); // 
@@ -243,7 +240,7 @@ public class GentleDataExtractor {
 			}
 			// (Medium) fotografiert von (Person)
 			List<Person> photographers = new ArrayList<>();
-			List<ExtendedRelationship> mediumPerson = fotografiertVon.stream().filter(x -> x.getFrom().getId().equals(medium.getId())).collect(Collectors.toList());
+			List<ExtendedRelationship> mediumPerson = filter(fotografiertVon, x -> x.getFrom().getId().equals(medium.getId()));
 			mediumPerson.forEach(mp -> {
 				Entity photographerEntity = mp.getTo();
 				Person photographerObject = getPerson(photographerEntity, geburtsortVon, sterbeOrt, schuelerInVon, false, 0);
@@ -254,19 +251,21 @@ public class GentleDataExtractor {
 			mediums.add(mediumObject);
 		}
 		
-		return new ArrayList<>(mediums);
+		return mediums;
 	}
 
 	// Institution
 	private static Institution getInstitution(Entity cc, Set<ExtendedRelationship> institutionInOrt) {
 		Institution institution = new Institution(cc);
 		institution.setLocation(new Place());
-		List<ExtendedRelationship> locations = institutionInOrt.stream().filter(x -> x.getFrom().getId().equals(cc.getId())).collect(Collectors.toList());
-		if(locations.size() > 0) {
-			Entity loc = locations.get(0).getTo();
-			Place locationObject = new Place(loc);
-			institution.setLocation(locationObject);
-		}
+		List<ExtendedRelationship> locations = filter(institutionInOrt, x -> x.getFrom().getId().equals(cc.getId()));
+		List<Entity> locs = locations.stream().map(ExtendedRelationship::getTo).collect(Collectors.toList());
+		institution.setLocation(new Place(locs.get(0)));
+//		if(locations.size() > 0) {
+//			Entity loc = locations.get(0).getTo();
+//			Place locationObject = new Place(loc);
+//			institution.setLocation(locationObject);
+//		}
 		return institution;
 	}
 
@@ -278,14 +277,14 @@ public class GentleDataExtractor {
 		personObject.setPlaceOfDeath(new Place());
 		
 		// (Ort) Geburtsort von (Person)
-		List<ExtendedRelationship> geborenIn = geburtsortVon.stream().filter(x -> x.getTo().getId().equals(person.getId())).collect(Collectors.toList());
+		List<ExtendedRelationship> geborenIn = filter(geburtsortVon, x -> x.getTo().getId().equals(person.getId()));
 		if(geborenIn.size() > 0) {
 			Entity bp = geborenIn.get(0).getFrom();
 			Place birthPlace = new Place(bp);
 			personObject.setBirthPlace(birthPlace);
 		}
 		// (Ort) Sterbeort von (Person)
-		List<ExtendedRelationship> gestorbenIn = sterbeOrt.stream().filter(x -> x.getTo().getId().equals(person.getId())).collect(Collectors.toList());
+		List<ExtendedRelationship> gestorbenIn = filter(sterbeOrt, x -> x.getTo().getId().equals(person.getId()));
 		if(gestorbenIn.size() > 0) {
 			Entity dp = gestorbenIn.get(0).getFrom();
 			Place placeOfDeath = new Place(dp);
@@ -297,7 +296,7 @@ public class GentleDataExtractor {
 		
 		// (Person) Schüler/in von (Person)
 		List<Person> teachers = new ArrayList<>();
-		List<ExtendedRelationship> students = schuelerInVon.stream().filter(x -> x.getFrom().getId().equals(person.getId())).collect(Collectors.toList());
+		List<ExtendedRelationship> students = filter(schuelerInVon, x -> x.getFrom().getId().equals(person.getId()));
 		for (ExtendedRelationship s : students) {
 			Entity teacherEntity = s.getTo();
 			Person teacherObject = getPerson(teacherEntity, geburtsortVon, sterbeOrt, schuelerInVon, false, (depth + 1));
@@ -308,10 +307,6 @@ public class GentleDataExtractor {
 		personObject.setTeachers(teachers);
 		
 		return personObject;
-	}
-
-	public static Set<ExtendedRelationship> filterRelationships(Set<ExtendedRelationship> relationships, final String id) {
-		return relationships.stream().filter(r -> r.getRelation().getId().equals(id)).collect(Collectors.toSet());
 	}
 
 	public Set<ExtendedRelationship> getRelationships(File importFile)
@@ -471,6 +466,14 @@ public class GentleDataExtractor {
 		marshaller.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, true);
 		marshaller.marshal(element, new File(importFile.getParent(), DateFormatUtils.format(new Date(), "dd-MM-yyyy") + "_conedakor_dump.xml"));
 		logger.info("data extraction finished!");
+	}
+	
+	private static List<ExtendedRelationship> filter(Set<ExtendedRelationship> relation, Predicate<ExtendedRelationship> predicte) {
+		return relation.stream().filter(predicte).collect(Collectors.toList());
+	}
+
+	public static Set<ExtendedRelationship> filterRelationships(Set<ExtendedRelationship> relationships, final String id) {
+		return relationships.stream().filter(r -> r.getRelation().getId().equals(id)).collect(Collectors.toSet());
 	}
 
 }
