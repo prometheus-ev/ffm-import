@@ -74,7 +74,7 @@ public class GentleSegmentMerger {
 			List<Entity> sortedEntities = new ArrayList<>(entities);
 			Collections.sort(sortedEntities);
 			Set<String> notRetrieved = new HashSet<>();
-			Set<ExtendedRelationship> asXml = new HashSet<>();
+			Set<ExtendedRelationship> toXml = new HashSet<>();
 			
 			ProgressBar p = new ProgressBar(relationships.size());
 			p.start();
@@ -90,23 +90,24 @@ public class GentleSegmentMerger {
 				if (e != null) rs.setTo(e);
 				else notRetrieved.add(r.getTo());
 
-				asXml.add(rs);
+				toXml.add(rs);
 				
 				p.increment();
 			}
 			p.done();
 			
 			final Set<Entity> result = Collections.synchronizedSet(new HashSet<Entity>());
+			
 			if (notRetrieved.size() > 0) {
 				logger.info("Count of missing records: " + notRetrieved.size());
-				getMissingRecords(notRetrieved, result, asXml);
+				getMissingRecords(notRetrieved, result, toXml);
 			}
 			
 			File desFolder = new File(destination);  
 			File exportFile = new File(desFolder, exportFileName);
 			
 			logger.info("Creating export file " + exportFile.getAbsolutePath());
-			exportXml(asXml, exportFile);
+			exportXml(toXml, exportFile);
 			
 			long duration = System.currentTimeMillis() - time;
 			logger.info("Done! ...took " + ((duration / 1000) / 60) + " min");
@@ -136,9 +137,9 @@ public class GentleSegmentMerger {
 		return object;
 	}
 
-	private void exportXml(Set<ExtendedRelationship> asXml, File file) throws JAXBException, PropertyException {
+	private void exportXml(Set<ExtendedRelationship> toXml, File file) throws JAXBException, PropertyException {
 		Prometheus prom = new Prometheus();
-		prom.setRelationships(asXml);
+		prom.setRelationships(toXml);
 
 		JAXBContext jaxbContext = JAXBContext.newInstance(Prometheus.class);
 		JAXBElement<Prometheus> element = new JAXBElement<Prometheus>(
