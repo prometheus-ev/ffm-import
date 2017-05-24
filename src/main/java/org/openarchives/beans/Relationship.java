@@ -8,6 +8,8 @@
 package org.openarchives.beans;
 
 import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.List;
 
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
@@ -15,7 +17,10 @@ import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlSchemaType;
 import javax.xml.bind.annotation.XmlType;
+import javax.xml.bind.annotation.XmlValue;
 import javax.xml.datatype.XMLGregorianCalendar;
+
+import com.google.gson.Gson;
 
 /**
  * <p>
@@ -56,7 +61,7 @@ import javax.xml.datatype.XMLGregorianCalendar;
  * 
  */
 @XmlAccessorType(XmlAccessType.FIELD)
-@XmlType(name = "relationship", propOrder = { "id", "createdAt", "updatedAt", "name", "relation", "from", "to" })
+@XmlType(name = "relationship", propOrder = { "id", "createdAt", "updatedAt", "name", "relation", "from", "to", "properties" })
 public class Relationship implements Serializable, Comparable<Relationship> {
 
 	private static final long serialVersionUID = -8533040673528252526L;
@@ -76,6 +81,64 @@ public class Relationship implements Serializable, Comparable<Relationship> {
 	protected String from;
 	@XmlElement(required = true)
 	protected String to;
+	
+	/** 
+	 * See coneda/kor issue <a href="https://github.com/coneda/kor/issues/118">#118</a>
+	 */
+	@XmlElement(required = false)
+	protected Relationship.Properties properties;
+	
+	public void setProperties(Relationship.Properties properties) {
+		this.properties = properties;
+	}
+	
+	public Relationship.Properties getProperties() {
+		return properties;
+	}
+	
+	@XmlAccessorType(XmlAccessType.FIELD)
+	@XmlType(name = "relaitonProperty")
+	public static class Properties implements Serializable {
+
+		private static final long serialVersionUID = 2317458202304162661L;
+		protected List<Relationship.Properties.Property> property;
+
+		public List<Relationship.Properties.Property> getProperty() {
+			if (property == null) {
+				property = new ArrayList<Relationship.Properties.Property>();
+			}
+			return this.property;
+		}
+
+		@XmlAccessorType(XmlAccessType.FIELD)
+		@XmlType(name = "", propOrder = { "value" })
+		public static class Property implements Serializable {
+			
+			/**
+			 * UUID
+			 */
+			private static final long serialVersionUID = 3939248585971154772L;
+			
+			@XmlValue
+			protected String value;
+
+			public String getValue() {
+				return value;
+			}
+
+			public void setValue(String value) {
+				this.value = value;
+			}
+
+		}
+
+	}
+	
+	
+	
+	
+	
+	
 
 	/**
 	 * Ruft den Wert der id-Eigenschaft ab.
@@ -376,5 +439,10 @@ public class Relationship implements Serializable, Comparable<Relationship> {
 	public int compareTo(Relationship o) {
 		return this.getId().compareTo(o.getId());
 	}
+	
+	public String toJson() {
+		return new Gson().toJson(this);
+	}
+
 
 }
