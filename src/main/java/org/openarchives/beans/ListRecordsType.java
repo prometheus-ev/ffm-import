@@ -10,10 +10,13 @@ package org.openarchives.beans;
 
 import java.util.ArrayList;
 import java.util.List;
+
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlType;
+
+import de.prometheus.bildarchiv.beans.ToJson;
 
 
 /**
@@ -41,7 +44,7 @@ import javax.xml.bind.annotation.XmlType;
     "record",
     "resumptionToken"
 })
-public class ListRecordsType {
+public class ListRecordsType implements ToJson {
 
     @XmlElement(required = true)
     protected List<RecordType> record;

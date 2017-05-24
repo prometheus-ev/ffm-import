@@ -20,7 +20,7 @@ import javax.xml.bind.annotation.XmlType;
 import javax.xml.bind.annotation.XmlValue;
 import javax.xml.datatype.XMLGregorianCalendar;
 
-import com.google.gson.Gson;
+import de.prometheus.bildarchiv.beans.ToJson;
 
 /**
  * <p>
@@ -62,7 +62,7 @@ import com.google.gson.Gson;
  */
 @XmlAccessorType(XmlAccessType.FIELD)
 @XmlType(name = "relationship", propOrder = { "id", "createdAt", "updatedAt", "name", "relation", "from", "to", "properties" })
-public class Relationship implements Serializable, Comparable<Relationship> {
+public class Relationship implements Serializable, Comparable<Relationship>, ToJson  {
 
 	private static final long serialVersionUID = -8533040673528252526L;
 	@XmlElement(required = true)
@@ -440,9 +440,4 @@ public class Relationship implements Serializable, Comparable<Relationship> {
 		return this.getId().compareTo(o.getId());
 	}
 	
-	public String toJson() {
-		return new Gson().toJson(this);
-	}
-
-
 }

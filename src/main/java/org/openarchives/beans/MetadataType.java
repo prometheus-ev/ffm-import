@@ -13,6 +13,8 @@ import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlType;
 
+import de.prometheus.bildarchiv.beans.ToJson;
+
 
 /**
  * Metadata must be expressed in XML that complies
@@ -48,7 +50,7 @@ import javax.xml.bind.annotation.XmlType;
     "relation",
     "relationship"
 })
-public class MetadataType {
+public class MetadataType implements ToJson {
 
     @XmlElement(required = true)
     protected Entity entity;
@@ -154,5 +156,5 @@ public class MetadataType {
     public void setRelationship(Relationship value) {
         this.relationship = value;
     }
-
+    
 }

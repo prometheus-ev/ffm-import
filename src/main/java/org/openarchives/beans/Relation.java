@@ -20,6 +20,8 @@ import javax.xml.bind.annotation.XmlType;
 import javax.xml.bind.annotation.XmlValue;
 import javax.xml.datatype.XMLGregorianCalendar;
 
+import de.prometheus.bildarchiv.beans.ToJson;
+
 
 /**
  * <p>Java-Klasse für relation complex type.
@@ -78,7 +80,7 @@ import javax.xml.datatype.XMLGregorianCalendar;
     "fromTypes",
     "toTypes"
 })
-public class Relation {
+public class Relation implements ToJson {
 
     @XmlElement(required = true)
     protected String id;

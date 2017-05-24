@@ -8,10 +8,8 @@ import javax.xml.bind.annotation.XmlElementWrapper;
 
 import org.openarchives.beans.Entity;
 
-import com.google.gson.Gson;
-
 // Werk
-public class Work extends Basic {
+public class Work extends Basic implements ToJson {
 
 	private static final long serialVersionUID = 5113927173240646123L;
 	private String subtype;
@@ -130,10 +128,6 @@ public class Work extends Basic {
 				+ commissioner + ", portrayal=" + portrayal + ", locatedIn=" + locatedIn + ", connectionsTo="
 				+ connectionsTo + ", parts=" + parts + ", illustrations=" + illustrations + ", exhibitions="
 				+ exhibitions + "]";
-	}
-
-	public String toJson() {
-		return new Gson().toJson(this);
 	}
 
 }

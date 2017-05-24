@@ -18,6 +18,8 @@ import javax.xml.bind.annotation.XmlSchemaType;
 import javax.xml.bind.annotation.XmlType;
 import javax.xml.datatype.XMLGregorianCalendar;
 
+import de.prometheus.bildarchiv.beans.ToJson;
+
 
 /**
  * <p>Java-Klasse für kind complex type.
@@ -78,7 +80,7 @@ import javax.xml.datatype.XMLGregorianCalendar;
     "fields",
     "generators"
 })
-public class Kind implements Serializable {
+public class Kind implements Serializable, ToJson {
 
 	private static final long serialVersionUID = 851020299220815372L;
 	@XmlElement(required = true)

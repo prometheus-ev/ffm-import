@@ -10,10 +10,13 @@ package org.openarchives.beans;
 
 import java.util.ArrayList;
 import java.util.List;
+
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlType;
+
+import de.prometheus.bildarchiv.beans.ToJson;
 
 
 /**
@@ -47,7 +50,7 @@ import javax.xml.bind.annotation.XmlType;
     "metadata",
     "about"
 })
-public class RecordType {
+public class RecordType implements ToJson {
 
     @XmlElement(required = true)
     protected HeaderType header;
