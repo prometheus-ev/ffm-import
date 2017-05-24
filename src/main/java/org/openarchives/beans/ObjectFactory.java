@@ -55,6 +55,14 @@ public class ObjectFactory {
     public Relationship.Properties createRelationshipProperties() {
         return new Relationship.Properties();
     }
+    
+    /**
+     * Create an instance of {@link Entity.Properties.Property }
+     * 
+     */
+    public Relationship.Properties.Property createRelationshipPropertiesProperty() {
+        return new Relationship.Properties.Property();
+    }
 
     /**
      * Create an instance of {@link Entity }
