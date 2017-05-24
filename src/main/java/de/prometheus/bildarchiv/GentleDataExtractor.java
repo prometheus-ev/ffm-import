@@ -69,11 +69,6 @@ public class GentleDataExtractor {
 	private Set<ExtendedRelationship> auftraggeberVonWerk;
 	private Set<ExtendedRelationship> ausstellungskatalogZu;
 	
-	public static void main(String[] args) throws JAXBException {
-		GentleDataExtractor gentleDataExtractor = new GentleDataExtractor(new File("/Users/matana/Desktop/conedaKor/28-03-2017_ffm_export.xml"), true);
-		gentleDataExtractor.getAndStoreData();
-	}
-	
 	public GentleDataExtractor(File importFile, boolean init) {
 		
 		this.importFile = importFile;
