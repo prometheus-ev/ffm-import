@@ -40,7 +40,7 @@ import de.prometheus.bildarchiv.exception.ResumptionTokenNullException;
 
 public class GentleTripleGrabber {
 
-	private static final String exportFileName = "_ffm_export.xml";
+	private static final String exportFileName = "_extended_relationships.xml";
 
 	/**
 	 * <p>
@@ -134,23 +134,22 @@ public class GentleTripleGrabber {
 
 			case ENTITIES:
 				for (RecordType recordType : records) {
-					if (recordType == null)
-						logger.info("recordType == null");
-					else if (recordType.getMetadata() == null)
-						logger.info("recordType.getMetadata() == null");
-					else if (recordType.getMetadata().getEntity() == null)
-						logger.info("recordType.getMetadata().getEntity() == null");
+					if (nullRecord(recordType))
+						continue;
 					else
 						set.add(recordType.getMetadata().getEntity());
 				}
 				break;
 			case RELATIONSHIPS:
 				for (RecordType recordType : records) {
-					set.add(recordType.getMetadata().getRelationship());
+					if (nullRecord(recordType))
+						continue;
+					else
+						set.add(recordType.getMetadata().getRelationship());
 				}
 				break;
 			default:
-				throw new NoSuchEndpointException("WrongEndpointSelectionException: allowed endpoints are [Endpoint.ENTITIES, Endpoint.RELATIONSHIPS]");
+				throw new NoSuchEndpointException("NoSuchEndpointException: [Endpoint.ENTITIES, Endpoint.RELATIONSHIPS] " + endpoint);
 			}
 
 			if (set.size() == 2500) {
@@ -184,6 +183,16 @@ public class GentleTripleGrabber {
 		boolean b = completeListSize.intValue() == counter;
 		int missing = b ? 0 : (completeListSize.intValue() - counter);
 		logger.info("Fetched all data? " + (b ? "ok!" : missing + " records missing!"));
+	}
+
+	private boolean nullRecord(RecordType recordType) {
+		if (recordType == null)
+			return true;
+		else if (recordType.getMetadata() == null)
+			return true;
+		else if (recordType.getMetadata().getEntity() == null)
+			return true;
+		return false;
 	}
 
 	private Runnable writeObject(final String type, final Set<?> set, final int index) {
