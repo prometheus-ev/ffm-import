@@ -129,7 +129,7 @@ public class GentleTripleGrabber {
 		BigInteger completeListSize = resumptionToken.getCompleteListSize();
 
 		logger.info("Fetching Data [completeListSize=" + completeListSize + "] from endpoint " + endpoint.name() + " [url=" + endpoint.listRecords() + "]");
-		//System.out.println("Fetching Data [completeListSize=" + completeListSize + "] from endpoint " + endpoint.name() + " [url=" + endpoint.listRecords() + "]");
+		System.out.println("Fetching Data [completeListSize=" + completeListSize + "] from endpoint " + endpoint.name() + " [url=" + endpoint.listRecords() + "]");
 
 		ProgressBar progressBar = new ProgressBar(Integer.valueOf(completeListSize.toString()));
 		progressBar.start();
@@ -157,7 +157,8 @@ public class GentleTripleGrabber {
 						set.add(recordType.getMetadata().getRelationship());
 						progressBar.increment();
 					}
-					// logger.debug(recordType.getMetadata().getRelationship().toJson());
+					 // logger.debug(recordType.getMetadata().getRelationship().toJson());
+					 System.out.println(recordType.getMetadata().getRelationship().toJson());
 				}
 				break;
 			default:
@@ -213,8 +214,6 @@ public class GentleTripleGrabber {
 		if (recordType == null)
 			return true;
 		else if (recordType.getMetadata() == null)
-			return true;
-		else if (recordType.getMetadata().getEntity() == null)
 			return true;
 		return false;
 	}
