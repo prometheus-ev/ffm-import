@@ -66,7 +66,7 @@ public final class Relations {
 	public static void main(String[] args) throws IOException, JAXBException {
 		String listRecords = Endpoint.RELATIONS.listRecords();
 		HttpURLConnection c = GentleUtils.getConnectionFor(listRecords);
-		JAXBElement<OAIPMHtype> oai = GentleUtils.getElement(c);
+		JAXBElement<OAIPMHtype> oai = GentleUtils.getElement(c, null);
 		List<RecordType> records = oai.getValue().getListRecords().getRecord();
 		for (RecordType recordType : records) {
 			System.out.println(recordType.getMetadata().getRelation());
@@ -76,7 +76,7 @@ public final class Relations {
 	public static Set<Relation> getRelations() throws IOException, JAXBException {
 		String listRecords = Endpoint.RELATIONS.listRecords();
 		HttpURLConnection c = GentleUtils.getConnectionFor(listRecords);
-		JAXBElement<OAIPMHtype> oai = GentleUtils.getElement(c);
+		JAXBElement<OAIPMHtype> oai = GentleUtils.getElement(c, null);
 		List<RecordType> records = oai.getValue().getListRecords().getRecord();
 		Set<Relation> toReturn = new HashSet<>();
 		for (RecordType recordType : records) {

@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.util.Scanner;
 
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBElement;
@@ -26,13 +27,23 @@ public final class GentleUtils {
 	/**
 	 * Returns an JAXBElement of type {@link OAIPMHtype}.
 	 * @param c {@link HttpURLConnection}
+	 * @param url 
 	 * @return JAXBElement
 	 * @throws JAXBException
 	 * @throws IOException
 	 */
-	public static JAXBElement<OAIPMHtype> getElement(HttpURLConnection c) throws JAXBException, IOException {
-		if(c == null)
+	public static JAXBElement<OAIPMHtype> getElement(HttpURLConnection c, String url) throws JAXBException, IOException {
+		if(c == null && url != null) {
 			logger.error("HttpURLConnection is null...");
+			logger.error("url: " + url);
+			Scanner scanner = new Scanner(new URL(url).openStream());
+			StringBuffer sb = new StringBuffer();
+			while(scanner.hasNext()) {
+				sb.append(scanner.nextLine());
+			}
+			scanner.close();
+			logger.error(sb.toString());
+		}
 		InputStream inputStream = c.getInputStream();
 		JAXBContext jaxbContext = JAXBContext.newInstance(OAIPMHtype.class, ObjectFactory.class);
 		Unmarshaller jaxbUnmarshaller = jaxbContext.createUnmarshaller();

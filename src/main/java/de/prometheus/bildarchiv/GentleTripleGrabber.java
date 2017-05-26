@@ -114,20 +114,25 @@ public class GentleTripleGrabber {
 
 	@SuppressWarnings("unchecked")
 	private void listRecords() throws JAXBException, IOException, NoSuchEndpointException, InterruptedException, ResumptionTokenNullException {
-
+		Integer globCounter = 0;
 		Integer counter = 0;
-		@SuppressWarnings("rawtypes")
-		Set set = new HashSet<>();
+		
 		AtomicInteger index = new AtomicInteger();
 		ExecutorService executor = Executors.newFixedThreadPool(1);
-		JAXBElement<OAIPMHtype> oai = GentleUtils.getElement(GentleUtils.getConnectionFor(endpoint.listRecords()));
+		
+		@SuppressWarnings("rawtypes")
+		Set set = new HashSet<>();
+		
+		JAXBElement<OAIPMHtype> oai = GentleUtils.getElement(GentleUtils.getConnectionFor(endpoint.listRecords()), null);
 		ResumptionTokenType resumptionToken = oai.getValue().getListRecords().getResumptionToken();
 		List<RecordType> records = oai.getValue().getListRecords().getRecord();
 		BigInteger completeListSize = resumptionToken.getCompleteListSize();
 
-		logger.info("Fetching Data [completeListSize=" + completeListSize + "] from endpoint " + endpoint.name()
-				+ " [url=" + endpoint.listRecords() + "]");
+		logger.info("Fetching Data [completeListSize=" + completeListSize + "] from endpoint " + endpoint.name() + " [url=" + endpoint.listRecords() + "]");
+		//System.out.println("Fetching Data [completeListSize=" + completeListSize + "] from endpoint " + endpoint.name() + " [url=" + endpoint.listRecords() + "]");
 
+		ProgressBar progressBar = new ProgressBar(Integer.valueOf(completeListSize.toString()));
+		progressBar.start();
 		while (resumptionToken != null) {
 
 			switch (endpoint) {
@@ -136,42 +141,58 @@ public class GentleTripleGrabber {
 				for (RecordType recordType : records) {
 					if (nullRecord(recordType))
 						continue;
-					else
+					else {
 						set.add(recordType.getMetadata().getEntity());
+						progressBar.increment();
+					}
+						
+					// logger.debug(recordType.getMetadata().getEntity().toJson());
 				}
 				break;
 			case RELATIONSHIPS:
 				for (RecordType recordType : records) {
 					if (nullRecord(recordType))
 						continue;
-					else
+					else {
 						set.add(recordType.getMetadata().getRelationship());
+						progressBar.increment();
+					}
+					// logger.debug(recordType.getMetadata().getRelationship().toJson());
 				}
 				break;
 			default:
 				throw new NoSuchEndpointException("NoSuchEndpointException: [Endpoint.ENTITIES, Endpoint.RELATIONSHIPS] " + endpoint);
 			}
 
-			if (set.size() == 2500) {
-				counter += set.size(); // increment global counter
+			counter = set.size();
+			
+			if (counter >= 2500) {
+				globCounter += set.size();
 				executor.execute(writeObject(endpoint.name(), new HashSet<>(set), index.incrementAndGet()));
 				set = new HashSet<>();
-				logger.info("Fechted " + counter + ", missing " + (completeListSize.intValue() - counter) + " " + endpoint.name());
+				// logger.debug("Fechted " + globCounter + " entries, missing " + (completeListSize.intValue() - globCounter) + " " + endpoint.name());
+				// System.out.println("Fechted " + globCounter + " entries, missing " + (completeListSize.intValue() - globCounter) + " " + endpoint.name());
+				counter = 0; 
 			}
 
+			if (resumptionToken.getValue() == null || resumptionToken.getValue().isEmpty())
+				break;
+			
+			// System.out.println("Fetched Data "+ globCounter + " from [url=" + resumptionToken.getValue() + "]");
+			
 			HttpURLConnection connectionFor = GentleUtils.getConnectionFor(endpoint.listRecords(resumptionToken.getValue()));
-			oai = GentleUtils.getElement(connectionFor);
+			oai = GentleUtils.getElement(connectionFor, endpoint.listRecords(resumptionToken.getValue()));
 			records = oai.getValue().getListRecords().getRecord();
 			resumptionToken = oai.getValue().getListRecords().getResumptionToken();
 
 			try {
-				Thread.sleep(200); // the gentleness
+				Thread.sleep(200); // the gentleness :-)
 			} catch (InterruptedException e) {
 				e.printStackTrace();
 			}
 		}
 
-		counter += set.size(); // last increment of global counter
+		globCounter += set.size(); // last increment of global counter
 		
 		// save data chunk
 		executor.execute(writeObject(endpoint.name(), new HashSet<>(set), index.incrementAndGet())); 
@@ -180,9 +201,12 @@ public class GentleTripleGrabber {
 		// wait until files are written
 		executor.awaitTermination(3000, TimeUnit.MILLISECONDS); 
 
-		boolean b = completeListSize.intValue() == counter;
-		int missing = b ? 0 : (completeListSize.intValue() - counter);
+		progressBar.done();
+		
+		boolean b = completeListSize.intValue() == globCounter;
+		int missing = b ? 0 : (completeListSize.intValue() - globCounter);
 		logger.info("Fetched all data? " + (b ? "ok!" : missing + " records missing!"));
+		// System.out.println("Fetched all data? " + (b ? "ok!" : missing + " records missing!"));
 	}
 
 	private boolean nullRecord(RecordType recordType) {
@@ -206,7 +230,8 @@ public class GentleTripleGrabber {
 					File file = new File(parent, type + "_" + index + ".kor");
 					ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(file));
 					oos.writeObject(set);
-					logger.debug("Temp file created " + file.getAbsolutePath() + " [" + file.length() + " bytes]");
+					// logger.debug("Temp file created " + file.getAbsolutePath() + " [" + file.length() + " bytes]");
+					// System.out.println("Temp file created " + file.getAbsolutePath() + " [" + file.length() + " bytes]");
 					oos.close();
 				} catch (IOException e) {
 					e.printStackTrace();

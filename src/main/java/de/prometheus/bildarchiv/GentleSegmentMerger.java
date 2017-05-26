@@ -233,7 +233,7 @@ public class GentleSegmentMerger {
 			for (String id : ids) {
 				String url = Endpoint.ENTITIES.getRecord(id);
 				HttpURLConnection c = GentleUtils.getConnectionFor(url);
-				JAXBElement<OAIPMHtype> e = GentleUtils.getElement(c);
+				JAXBElement<OAIPMHtype> e = GentleUtils.getElement(c, null);
 				Entity entity = e.getValue().getGetRecord().getRecord().getMetadata().getEntity();
 				tmp.add(entity);
 				try {
