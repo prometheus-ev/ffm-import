@@ -21,6 +21,8 @@ import javax.xml.bind.annotation.XmlType;
 import javax.xml.bind.annotation.XmlValue;
 import javax.xml.datatype.XMLGregorianCalendar;
 
+import de.prometheus.bildarchiv.beans.ToJson;
+
 /**
  * <p>
  * Java-Klasse für entity complex type.
@@ -141,7 +143,7 @@ import javax.xml.datatype.XMLGregorianCalendar;
 @XmlAccessorType(XmlAccessType.FIELD)
 @XmlType(name = "entity", propOrder = { "id", "collection", "createdAt", "updatedAt", "type", "imagePath", "title",
 		"subType", "distinction", "synonym", "noNameSpecifier", "tags", "fields", "properties", "datings", "comment" })
-public class Entity implements Serializable, Comparable<Entity>{
+public class Entity implements Serializable, Comparable<Entity>, ToJson {
 
 	private static final long serialVersionUID = -1197501305348860684L;
 	@XmlElement(required = true)
