@@ -57,13 +57,17 @@ public final class GentleUtils {
 	 * @return {@link HttpURLConnection}
 	 * @throws IOException
 	 */
-	public static HttpURLConnection getConnectionFor(String url) throws IOException {
-		HttpURLConnection connection = (HttpURLConnection) new URL(url).openConnection();
-		connection.setRequestMethod("GET");
-		connection.connect();
-		int code = connection.getResponseCode();
-		if (code == 200)
-			return connection;
+	public static HttpURLConnection getConnectionFor(String url) {
+		try {
+			HttpURLConnection connection = (HttpURLConnection) new URL(url).openConnection();
+			connection.setRequestMethod("GET");
+			connection.connect();
+			int code = connection.getResponseCode();
+			if (code == 200)
+				return connection;
+		} catch (IOException e) {
+			logger.error(e.getMessage());
+		}
 		return null;
 	}
 
