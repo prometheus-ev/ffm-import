@@ -32,5 +32,9 @@ public class ProgressBar {
 	public void done() {
 		System.out.println("| done!" + ANSI_RESET);
 	}
+	
+	public static void error() {
+		System.out.println(" ... error occured!" + ANSI_RESET);
+	}
 
 }

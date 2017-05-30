@@ -34,7 +34,8 @@ public final class GentleUtils {
 	 */
 	public static JAXBElement<OAIPMHtype> getElement(HttpURLConnection c, String url) throws JAXBException, IOException {
 		if(c == null && url != null) {
-			logger.error("HttpURLConnection is null...");
+			ProgressBar.error();
+			logger.error("HttpURLConnection " + c);
 			logger.error("url: " + url);
 			Scanner scanner = new Scanner(new URL(url).openStream());
 			StringBuffer sb = new StringBuffer();
@@ -42,7 +43,7 @@ public final class GentleUtils {
 				sb.append(scanner.nextLine());
 			}
 			scanner.close();
-			logger.error(sb.toString());
+			System.err.println(sb.toString());
 		}
 		InputStream inputStream = c.getInputStream();
 		JAXBContext jaxbContext = JAXBContext.newInstance(OAIPMHtype.class, ObjectFactory.class);
