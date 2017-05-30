@@ -27,7 +27,7 @@ public final class GentleUtils {
 	/**
 	 * Returns an JAXBElement of type {@link OAIPMHtype}.
 	 * @param c {@link HttpURLConnection}
-	 * @param url 
+	 * @param URL 
 	 * @return JAXBElement
 	 * @throws JAXBException
 	 * @throws IOException
@@ -52,7 +52,7 @@ public final class GentleUtils {
 	}
 
 	/**
-	 * Returns a {@link HttpURLConnection} for a given url.
+	 * Returns a {@link HttpURLConnection} for a given URL.
 	 * @param url {@link String}
 	 * @return {@link HttpURLConnection}
 	 * @throws IOException
@@ -61,13 +61,15 @@ public final class GentleUtils {
 		try {
 			HttpURLConnection connection = (HttpURLConnection) new URL(url).openConnection();
 			connection.setRequestMethod("GET");
+			connection.setConnectTimeout(10000);
+			connection.setReadTimeout(10000);
 			connection.connect();
 			int code = connection.getResponseCode();
 			if (code == 200)
 				return connection;
 		} catch (IOException e) {
 			logger.error(e.getMessage());
-		}
+		} 
 		return null;
 	}
 
