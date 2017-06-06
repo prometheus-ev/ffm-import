@@ -35,21 +35,28 @@ import org.openarchives.beans.Relationship;
 
 public class GentleSegmentMerger {
 	
-	private static final Logger logger = LogManager.getLogger(GentleSegmentMerger.class);
-	private String exportFileName;
-	private String destination;
+	private static final Logger LOG = LogManager.getLogger(GentleSegmentMerger.class);
+	private final String exportFileName;
+	private final String destination;
 
 	GentleSegmentMerger(final String destination, final String exportFileName) {
 		this.destination = destination;
 		this.exportFileName = exportFileName;
 	}
 	
+	/**
+	 * 
+	 * @return
+	 */
 	public File merge() {
 
 		long time = System.currentTimeMillis();
 		
 		try {
-			logger.info("Unmarshalling 'relationships' ...");
+			
+			if(LOG.isInfoEnabled()) {
+				LOG.info("Unmarshalling 'relationships' and 'entities' ...");
+			}
 			
 			File tmpDir = new File("/tmp");
 			tmpDir.mkdirs();
@@ -62,7 +69,6 @@ public class GentleSegmentMerger {
 				relationships.addAll(s);
 			}
 			
-			logger.info("Unmarshalling 'entities' ...");
 			files = get(new File(tmpDir, "ENTITIES/"), ".kor");
 			Set<Entity> entities = new HashSet<>();
 			for (File f : files) {
@@ -99,31 +105,39 @@ public class GentleSegmentMerger {
 			final Set<Entity> result = Collections.synchronizedSet(new HashSet<Entity>());
 			
 			if (notRetrieved.size() > 0) {
-				logger.info("Count of missing records: " + notRetrieved.size());
+				if(LOG.isInfoEnabled()) {
+					LOG.info("Count of missing records: " + notRetrieved.size());
+				}
 				getMissingRecords(notRetrieved, result, toXml);
 			}
 			
 			File desFolder = new File(destination);  
 			File exportFile = new File(desFolder, exportFileName);
 			
-			logger.info("Creating export file " + exportFile.getAbsolutePath());
+			if(LOG.isInfoEnabled()) {
+				LOG.info("Creating export file " + exportFile.getAbsolutePath());
+			}
+				
 			exportXml(toXml, exportFile);
 			
-			long duration = System.currentTimeMillis() - time;
-			logger.info("Done! ...took " + ((duration / 1000) / 60) + " min");
+			if(LOG.isInfoEnabled()) {
+				long duration = System.currentTimeMillis() - time;
+				LOG.info("Done! ...took " + ((duration / 1000) / 60) + " min");
+			}
+			
 			
 			return exportFile;
 			
 		} catch (FileNotFoundException e) {
-			e.printStackTrace();
+			LOG.error(e.getLocalizedMessage());
 		} catch (ClassNotFoundException e) {
-			e.printStackTrace();
+			LOG.error(e.getLocalizedMessage());
 		} catch (IOException e) {
-			e.printStackTrace();
+			LOG.error(e.getLocalizedMessage());
 		} catch (PropertyException e) {
-			e.printStackTrace();
+			LOG.error(e.getLocalizedMessage());
 		} catch (JAXBException e) {
-			e.printStackTrace();
+			LOG.error(e.getLocalizedMessage());
 		}
 		
 		return null;
@@ -176,13 +190,16 @@ public class GentleSegmentMerger {
 			Future<Set<Entity>> future = executor.submit(new RequestCallable(new HashSet<>(s)));
 			futures.add(future);
 		}
-
-		logger.info("Retrieving missing entities... this might take a moment (" + futures.size() + " threads)");
+		
+		if(LOG.isInfoEnabled()) { 
+			LOG.info("Retrieving missing entities... this might take a moment (" + futures.size() + " threads)");
+		}
+		
 		for (Future<Set<Entity>> future : futures) {
 			try {
 				result.addAll(future.get());
 			} catch (InterruptedException | ExecutionException e) {
-				e.printStackTrace();
+				LOG.error(e.getLocalizedMessage());
 			}
 		}
 		executor.shutdown();
@@ -233,13 +250,13 @@ public class GentleSegmentMerger {
 			for (String id : ids) {
 				String url = Endpoint.ENTITIES.getRecord(id);
 				HttpURLConnection c = GentleUtils.getConnectionFor(url);
-				JAXBElement<OAIPMHtype> e = GentleUtils.getElement(c, null);
-				Entity entity = e.getValue().getGetRecord().getRecord().getMetadata().getEntity();
+				JAXBElement<OAIPMHtype> element = GentleUtils.getElement(c, null);
+				Entity entity = element.getValue().getGetRecord().getRecord().getMetadata().getEntity();
 				tmp.add(entity);
 				try {
 					Thread.sleep(200);
-				} catch (InterruptedException e1) {
-					e1.printStackTrace();
+				} catch (InterruptedException e) {
+					LOG.error(e.getLocalizedMessage());
 				}
 			}
 
