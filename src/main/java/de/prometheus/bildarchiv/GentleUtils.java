@@ -4,8 +4,8 @@ import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
 import java.net.URL;
-import java.util.Scanner;
 
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBElement;
@@ -19,32 +19,23 @@ import org.openarchives.beans.OAIPMHtype;
 import org.openarchives.beans.ObjectFactory;
 
 public final class GentleUtils {
-	
+
 	private static final Logger logger = LogManager.getLogger(GentleUtils.class);
-	
-	private GentleUtils() {}
-	
+
+	private GentleUtils() {
+	}
+
 	/**
 	 * Returns an JAXBElement of type {@link OAIPMHtype}.
+	 * 
 	 * @param c {@link HttpURLConnection}
-	 * @param URL 
+	 * @param URL
 	 * @return JAXBElement
 	 * @throws JAXBException
 	 * @throws IOException
 	 */
 	public static JAXBElement<OAIPMHtype> getElement(HttpURLConnection c, String url) throws JAXBException, IOException {
-		if(c == null && url != null) {
-			ProgressBar.error();
-			logger.error("HttpURLConnection " + c);
-			logger.error("url: " + url);
-			Scanner scanner = new Scanner(new URL(url).openStream());
-			StringBuffer sb = new StringBuffer();
-			while(scanner.hasNext()) {
-				sb.append(scanner.nextLine());
-			}
-			scanner.close();
-			System.err.println(sb.toString());
-		}
+		c = validateConnection(c, url);
 		InputStream inputStream = c.getInputStream();
 		JAXBContext jaxbContext = JAXBContext.newInstance(OAIPMHtype.class, ObjectFactory.class);
 		Unmarshaller jaxbUnmarshaller = jaxbContext.createUnmarshaller();
@@ -54,7 +45,9 @@ public final class GentleUtils {
 
 	/**
 	 * Returns a {@link HttpURLConnection} for a given URL.
-	 * @param url {@link String}
+	 * 
+	 * @param url
+	 *            {@link String}
 	 * @return {@link HttpURLConnection}
 	 * @throws IOException
 	 */
@@ -69,9 +62,33 @@ public final class GentleUtils {
 			if (code == 200)
 				return connection;
 		} catch (IOException e) {
+			ProgressBar.error();
 			logger.error(e.getMessage());
-		} 
+		}
 		return null;
 	}
+
+	private static HttpURLConnection validateConnection(HttpURLConnection c, String url)
+			throws IOException, MalformedURLException {
+		if (c == null) {
+			ProgressBar.error();
+			logger.error("httpURLConnection is null...");
+			if (url != null) {
+				logger.error("Trying to reconnect  [" + url + "]");
+				c = getConnectionFor(url);
+			} 
+		}
+		return c;
+	}
+	
+//	else {
+//	Scanner scanner = new Scanner(new URL(url).openStream());
+//	StringBuffer sb = new StringBuffer();
+//	while (scanner.hasNext()) {
+//		sb.append(scanner.nextLine());
+//	}
+//	scanner.close();
+//	System.err.println(sb.toString());
+//}
 
 }
