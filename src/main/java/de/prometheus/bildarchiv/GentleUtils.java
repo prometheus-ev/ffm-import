@@ -22,6 +22,7 @@ public final class GentleUtils {
 	private static final Logger LOG = LogManager.getLogger(GentleUtils.class);
 
 	private GentleUtils() {
+		// Static utility class
 	}
 
 	/**
@@ -36,8 +37,8 @@ public final class GentleUtils {
 	public static JAXBElement<OAIPMHtype> getElement(HttpURLConnection connection, final String url) throws JAXBException, IOException {
 		HttpURLConnection httpConnection = connection;
 		if(connection == null) {
-			if(LOG.isErrorEnabled()) { 
-				LOG.error("httpURLConnection is null...");
+			if(LOG.isInfoEnabled()) { 
+				LOG.info("httpURLConnection is null...");
 			}
 			if (url != null) {
 				httpConnection = getConnectionFor(url);
