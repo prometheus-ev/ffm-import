@@ -368,7 +368,7 @@ public class Relation implements ToJson {
             
             
             public Type() {
-            	System.out.println("Creating ......................");
+            	super();
             }
 
             /**
@@ -421,7 +421,6 @@ public class Relation implements ToJson {
 
         }
 
-
     }
 
 
@@ -448,8 +447,11 @@ public class Relation implements ToJson {
     @XmlType(name = "", propOrder = { "type" })
     public static class ToTypes {
     	
-    	@XmlElement(name = "kor:from-types")
-        protected List<Typetype> type;
+    	@XmlElement(name = "kor:type")
+        protected List<Relation.ToTypes.Type> type;
+
+    	public ToTypes() {
+        }
 
         /**
          * Gets the value of the type property.
@@ -473,11 +475,79 @@ public class Relation implements ToJson {
          * 
          * 
          */
-        public List<Typetype> getType() {
+        public List<Relation.ToTypes.Type> getType() {
             if (type == null) {
-                type = new ArrayList<Typetype>();
+                type = new ArrayList<Relation.ToTypes.Type>();
             }
             return this.type;
+        }
+        
+        public void setType(ArrayList<Relation.ToTypes.Type> type) {
+        	this.type = type;
+        }
+        
+        @XmlAccessorType(XmlAccessType.FIELD)
+        @XmlType(name = "", propOrder = { "value" })
+        public static class Type {
+
+            @XmlValue
+            protected String value;
+            @XmlAttribute(name = "id", required = true)
+            protected String id;
+            
+            
+            public Type() {
+            	super();
+            }
+
+            /**
+             * Ruft den Wert der value-Eigenschaft ab.
+             * 
+             * @return
+             *     possible object is
+             *     {@link String }
+             *     
+             */
+            public String getValue() {
+                return value;
+            }
+
+            /**
+             * Legt den Wert der value-Eigenschaft fest.
+             * 
+             * @param value
+             *     allowed object is
+             *     {@link String }
+             *     
+             */
+            public void setValue(String value) {
+                this.value = value;
+            }
+
+            /**
+             * Ruft den Wert der id-Eigenschaft ab.
+             * 
+             * @return
+             *     possible object is
+             *     {@link String }
+             *     
+             */
+            public String getId() {
+                return id;
+            }
+
+            /**
+             * Legt den Wert der id-Eigenschaft fest.
+             * 
+             * @param value
+             *     allowed object is
+             *     {@link String }
+             *     
+             */
+            public void setId(String value) {
+                this.id = value;
+            }
+
         }
 
     }

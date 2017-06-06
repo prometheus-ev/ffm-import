@@ -137,14 +137,6 @@ public class ObjectFactory {
     }
 
     /**
-     * Create an instance of {@link Typetype }
-     * 
-     */
-    public Typetype createTypetype() {
-        return new Typetype();
-    }
-
-    /**
      * Create an instance of {@link RequestType }
      * 
      */
@@ -323,6 +315,10 @@ public class ObjectFactory {
     
     public Relation.FromTypes.Type createRelationFromTypesType() {
         return new Relation.FromTypes.Type();
+    }
+    
+    public Relation.ToTypes.Type createRelationToTypesType() {
+        return new Relation.ToTypes.Type();
     }
 
     /**
