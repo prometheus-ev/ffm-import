@@ -85,7 +85,7 @@ public final class GentleTripleGrabber {
 			File importFile = gentleSegmentMerger.merge();
 
 			GentleDataExtractor gentleDataExtractor = new GentleDataExtractor(importFile);
-			gentleDataExtractor.getAndStoreData();
+			gentleDataExtractor.extractData();
 
 		} catch (JAXBException e) {
 			LOG.error(e.getLocalizedMessage());
