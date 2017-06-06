@@ -32,23 +32,9 @@ public class Basic implements Serializable {
 	private String site; // Standort
 	
 	
-	public Basic() { }
-	
-//	public Basic(String id, String title, Collection collection, String distinction, String comment, List<String> synonyms,
-//			XMLGregorianCalendar createdAt, XMLGregorianCalendar updatedAt) {
-//		super();
-//		
-//		String collectionValue = collection == null ? "unknown" : collection.getValue();
-//		
-//		this.id = id;
-//		this.title = title;
-//		this.collection = collectionValue;
-//		this.distinction = distinction;
-//		this.comment = comment;
-//		this.synonyms = synonyms;
-//		this.createdAt = createdAt;
-//		this.updatedAt = updatedAt;
-//	}
+	public Basic() { 
+		super();
+	}
 	
 	public Basic(Entity entity) {
 		super();

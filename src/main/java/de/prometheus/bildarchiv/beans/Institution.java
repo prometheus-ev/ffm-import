@@ -8,13 +8,10 @@ public class Institution extends Basic {
 	
 	private Place location;
 	
-	public Institution() { }
+	public Institution() { 
+		super();
+	}
 
-//	public Institution(String id, String title, Collection collection, String distinction, String comment,
-//			List<String> synonyms, XMLGregorianCalendar createdAt, XMLGregorianCalendar updatedAt) {
-//		super(id, title, collection, distinction, comment, synonyms, createdAt, updatedAt);
-//	}
-	
 	public Institution(Entity entity) {
 		super(entity);
 	}
@@ -32,6 +29,4 @@ public class Institution extends Basic {
 		return "Institution [location=" + location + "]" + super.toString();
 	}
 	
-	
-
 }
