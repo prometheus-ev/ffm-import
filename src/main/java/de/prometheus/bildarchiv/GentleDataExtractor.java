@@ -107,13 +107,13 @@ public class GentleDataExtractor {
 			LOG.info("init-procedure done!");
 
 		} catch (FileNotFoundException e) {
-			e.printStackTrace();
+			LOG.error(e.getLocalizedMessage());
 		} catch (InterruptedException e) {
-			e.printStackTrace();
+			LOG.error(e.getLocalizedMessage());
 		} catch (ExecutionException e) {
-			e.printStackTrace();
+			LOG.error(e.getLocalizedMessage());
 		} catch (JAXBException e) {
-			e.printStackTrace();
+			LOG.error(e.getLocalizedMessage());
 		}
 
 	}
