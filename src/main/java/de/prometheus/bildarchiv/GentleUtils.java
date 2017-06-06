@@ -4,7 +4,6 @@ import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
-import java.net.MalformedURLException;
 import java.net.URL;
 
 import javax.xml.bind.JAXBContext;
@@ -20,7 +19,7 @@ import org.openarchives.beans.ObjectFactory;
 
 public final class GentleUtils {
 
-	private static final Logger logger = LogManager.getLogger(GentleUtils.class);
+	private static final Logger LOG = LogManager.getLogger(GentleUtils.class);
 
 	private GentleUtils() {
 	}
@@ -34,9 +33,21 @@ public final class GentleUtils {
 	 * @throws JAXBException
 	 * @throws IOException
 	 */
-	public static JAXBElement<OAIPMHtype> getElement(HttpURLConnection c, String url) throws JAXBException, IOException {
-		c = validateConnection(c, url);
-		InputStream inputStream = c.getInputStream();
+	public static JAXBElement<OAIPMHtype> getElement(HttpURLConnection connection, final String url) throws JAXBException, IOException {
+		HttpURLConnection httpConnection = connection;
+		if(connection == null) {
+			if(LOG.isErrorEnabled()) { 
+				LOG.error("httpURLConnection is null...");
+			}
+			if (url != null) {
+				httpConnection = getConnectionFor(url);
+			} 
+		}
+		return getlement(httpConnection);
+	}
+
+	private static JAXBElement<OAIPMHtype> getlement(HttpURLConnection connection) throws IOException, JAXBException {
+		InputStream inputStream = connection.getInputStream();
 		JAXBContext jaxbContext = JAXBContext.newInstance(OAIPMHtype.class, ObjectFactory.class);
 		Unmarshaller jaxbUnmarshaller = jaxbContext.createUnmarshaller();
 		StreamSource streamSource = new StreamSource(new BufferedInputStream(inputStream));
@@ -51,7 +62,7 @@ public final class GentleUtils {
 	 * @return {@link HttpURLConnection}
 	 * @throws IOException
 	 */
-	public static HttpURLConnection getConnectionFor(String url) {
+	public static HttpURLConnection getConnectionFor(final String url) {
 		try {
 			HttpURLConnection connection = (HttpURLConnection) new URL(url).openConnection();
 			connection.setRequestMethod("GET");
@@ -63,32 +74,9 @@ public final class GentleUtils {
 				return connection;
 		} catch (IOException e) {
 			ProgressBar.error();
-			logger.error(e.getMessage());
+			LOG.error(e.getMessage());
 		}
 		return null;
 	}
-
-	private static HttpURLConnection validateConnection(HttpURLConnection c, String url)
-			throws IOException, MalformedURLException {
-		if (c == null) {
-			ProgressBar.error();
-			logger.error("httpURLConnection is null...");
-			if (url != null) {
-				logger.error("Trying to reconnect  [" + url + "]");
-				c = getConnectionFor(url);
-			} 
-		}
-		return c;
-	}
 	
-//	else {
-//	Scanner scanner = new Scanner(new URL(url).openStream());
-//	StringBuffer sb = new StringBuffer();
-//	while (scanner.hasNext()) {
-//		sb.append(scanner.nextLine());
-//	}
-//	scanner.close();
-//	System.err.println(sb.toString());
-//}
-
 }
