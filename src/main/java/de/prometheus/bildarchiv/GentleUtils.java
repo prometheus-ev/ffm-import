@@ -1,10 +1,14 @@
 package de.prometheus.bildarchiv;
 
 import java.io.BufferedInputStream;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.util.Properties;
 
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBElement;
@@ -76,6 +80,22 @@ public final class GentleUtils {
 		} catch (IOException e) {
 			ProgressBar.error();
 			LOG.error(e.getMessage());
+		}
+		return null;
+	}
+	
+	/**
+	 * 
+	 * @param propertiesFile
+	 * @return
+	 */
+	public static Properties getProperties(final File propertiesFile) {
+		try (BufferedReader reader = new BufferedReader(new FileReader(propertiesFile))) {
+			Properties properties = new Properties();
+			properties.load(reader);
+			return properties;
+		} catch (Exception e) {
+			LOG.error("Unable to load " + propertiesFile, e.getLocalizedMessage());
 		}
 		return null;
 	}

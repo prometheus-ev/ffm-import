@@ -17,6 +17,7 @@ import java.net.URL;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Properties;
 import java.util.Scanner;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
@@ -45,43 +46,63 @@ import de.prometheus.bildarchiv.exception.ResumptionTokenNullException;
 public final class GentleTripleGrabber {
 
 	private static final String EXPORT_FILE_NAME = "_extended_relationships.xml";
-	private static final Logger LOG = LogManager.getLogger(GentleTripleGrabber.class);
 	private static final int CHUNK_SIZE = 2500;
 	private transient Endpoint endpoint;
+	private static Logger LOG;
 	
 	/**
 	 * <p> A gentle command line tool for harvesting OAI-PMH XML data provided by
 	 * <a href="https://github.com/coneda/kor">ConedaKOR</a></p>
-	 * <code>-Xms1g -Xmx2g -Dlog4j.configurationFile=/path/to/log4j2.xml -jar ffm.jar -d /path/to/data/folder/</code>
+	 * <code>-Xms1g -Xmx2g -jar ffm.jar -c ./config -d ./data </code>
 	 * @param args
 	 */
 	public static void main(String[] args) {
-
-		String exportFile = getTimeStamp() + EXPORT_FILE_NAME;
-		String destination;
-
+		
 		Options options = new Options();
-		Option option = new Option("d", "dir", true, "The destination of the '*." + EXPORT_FILE_NAME + "' file");
-		option.setRequired(false);
-		options.addOption(option);
+		
+		Option configOption = new Option("c", "config", true, "The configuration directory");
+		configOption.setRequired(true);
+		
+		Option destinationOption = new Option("d", "dir", true, "The destination of the '*." + EXPORT_FILE_NAME + "' file");
+		destinationOption.setRequired(false);
+		
+		options.addOption(configOption);
+		options.addOption(destinationOption);
+		
 		CommandLineParser parser = new DefaultParser();
 
 		try {
+			
+			String exportFile = getTimeStamp() + EXPORT_FILE_NAME;
 
 			CommandLine cmd = parser.parse(options, args);
-			destination = cmd.getOptionValue("d") == null ? "/tmp" : cmd.getOptionValue("d");
+			
+			File configDir = new File(cmd.getOptionValue("c"));
+
+			// Logger configuration
+			File log4jXml = new File(configDir, "log4j2.xml");
+			System.setProperty("log4j.configurationFile", log4jXml.getAbsolutePath());
+			LOG = LogManager.getLogger(GentleTripleGrabber.class);
+			
+			// conedaKor API configuration
+			File endpointProperties = new File(configDir, "endpoint.properties");
+			Properties properties = GentleUtils.getProperties(endpointProperties);
+			System.setProperty("apiKey", properties.getProperty("apiKey"));
+			System.setProperty("baseUrl", properties.getProperty("baseUrl"));
+			
+			String exportDir = cmd.getOptionValue("d") == null ? "/tmp" : cmd.getOptionValue("d");
 			
 			if(LOG.isInfoEnabled()) { 
-				LOG.info("Final export file " + exportFile + " will be saved to " + destination);
+				LOG.info("Final export file " + exportFile + " will be saved to " + exportDir);
 			}
-
+			
 			GentleTripleGrabber gentleTripleGrabber = new GentleTripleGrabber(Endpoint.ENTITIES);
 			gentleTripleGrabber.listRecords();
 
 			gentleTripleGrabber = new GentleTripleGrabber(Endpoint.RELATIONSHIPS);
 			gentleTripleGrabber.listRecords();
 
-			GentleSegmentMerger gentleSegmentMerger = new GentleSegmentMerger(destination, exportFile);
+			GentleSegmentMerger gentleSegmentMerger = new GentleSegmentMerger(exportDir, exportFile);
 			File importFile = gentleSegmentMerger.merge();
 
 			GentleDataExtractor gentleDataExtractor = new GentleDataExtractor(importFile);
@@ -119,7 +140,7 @@ public final class GentleTripleGrabber {
 		int counter = 0;
 
 		AtomicInteger index = new AtomicInteger();
-		AtomicInteger xmlIndex = new AtomicInteger();
+		// AtomicInteger xmlIndex = new AtomicInteger();
 		
 		String url = endpoint.listRecords();
 		
@@ -238,6 +259,7 @@ public final class GentleTripleGrabber {
 		};
 	}
 
+	@SuppressWarnings("unused")
 	private Runnable saveXml(final String url, int index) {
 		return new Runnable() {
 			@Override
