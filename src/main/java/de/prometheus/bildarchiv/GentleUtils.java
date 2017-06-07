@@ -38,7 +38,7 @@ public final class GentleUtils {
 	 * @throws JAXBException
 	 * @throws IOException
 	 */
-	public static JAXBElement<OAIPMHtype> getElement(HttpURLConnection connection, final String url) throws JAXBException, IOException {
+	public static JAXBElement<OAIPMHtype> getElement(HttpURLConnection connection, final String url) {
 		HttpURLConnection httpConnection = connection;
 		if(connection == null) {
 			if(LOG.isInfoEnabled()) { 
@@ -51,12 +51,18 @@ public final class GentleUtils {
 		return getlement(httpConnection);
 	}
 
-	private static JAXBElement<OAIPMHtype> getlement(HttpURLConnection connection) throws IOException, JAXBException {
-		InputStream inputStream = connection.getInputStream();
-		JAXBContext jaxbContext = JAXBContext.newInstance(OAIPMHtype.class, ObjectFactory.class);
-		Unmarshaller jaxbUnmarshaller = jaxbContext.createUnmarshaller();
-		StreamSource streamSource = new StreamSource(new BufferedInputStream(inputStream));
-		return jaxbUnmarshaller.unmarshal(streamSource, OAIPMHtype.class);
+	private static JAXBElement<OAIPMHtype> getlement(HttpURLConnection connection) {
+		try (InputStream inputStream = connection.getInputStream()){
+			JAXBContext jaxbContext = JAXBContext.newInstance(OAIPMHtype.class, ObjectFactory.class);
+			Unmarshaller jaxbUnmarshaller = jaxbContext.createUnmarshaller();
+			StreamSource streamSource = new StreamSource(new BufferedInputStream(inputStream));
+			return jaxbUnmarshaller.unmarshal(streamSource, OAIPMHtype.class);
+		} catch (IOException e) {
+			LOG.error(e.getLocalizedMessage());
+		} catch (JAXBException e) {
+			LOG.error(e.getLocalizedMessage());
+		}
+		return null;
 	}
 
 	/**
@@ -78,6 +84,7 @@ public final class GentleUtils {
 			if (code == 200)
 				return connection;
 		} catch (IOException e) {
+			// interrupt progress bar...
 			ProgressBar.error();
 			LOG.error(e.getMessage());
 		}

@@ -89,7 +89,7 @@
 					<finalName>ffm-import</finalName>
 					<archive>
 						<manifest>
-							<mainClass>de.prometheus.bildarchiv.GentleTripleGrabber</mainClass>
+							<mainClass>de.prometheus.bildarchiv.Application</mainClass>
 						</manifest>
 					</archive>
 					<descriptorRefs>
