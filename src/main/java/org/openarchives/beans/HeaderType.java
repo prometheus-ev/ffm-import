@@ -8,6 +8,7 @@
 
 package org.openarchives.beans;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import javax.xml.bind.annotation.XmlAccessType;
@@ -53,9 +54,11 @@ import javax.xml.bind.annotation.XmlType;
     "datestamp",
     "setSpec"
 })
-public class HeaderType {
+public class HeaderType implements Serializable {
 
-    @XmlElement(required = true)
+	private static final long serialVersionUID = -2676846493603130649L;
+
+	@XmlElement(required = true)
     @XmlSchemaType(name = "anyURI")
     protected String identifier;
     @XmlElement(required = true)

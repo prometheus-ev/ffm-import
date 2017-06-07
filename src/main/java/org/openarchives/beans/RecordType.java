@@ -8,6 +8,7 @@
 
 package org.openarchives.beans;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -50,9 +51,11 @@ import de.prometheus.bildarchiv.beans.ToJson;
     "metadata",
     "about"
 })
-public class RecordType implements ToJson {
+public class RecordType implements ToJson, Serializable {
 
-    @XmlElement(required = true)
+	private static final long serialVersionUID = 6164025485091422883L;
+
+	@XmlElement(required = true)
     protected HeaderType header;
     protected MetadataType metadata;
     protected List<AboutType> about;

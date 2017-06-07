@@ -8,6 +8,8 @@
 
 package org.openarchives.beans;
 
+import java.io.Serializable;
+
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlElement;
@@ -50,9 +52,11 @@ import de.prometheus.bildarchiv.beans.ToJson;
     "relation",
     "relationship"
 })
-public class MetadataType implements ToJson {
+public class MetadataType implements ToJson, Serializable {
 
-    @XmlElement(required = true)
+	private static final long serialVersionUID = 7718768665805306333L;
+	
+	@XmlElement(required = true)
     protected Entity entity;
     @XmlElement(required = true)
     protected Kind kind;
