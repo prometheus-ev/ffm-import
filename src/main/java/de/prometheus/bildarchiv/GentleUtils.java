@@ -42,7 +42,7 @@ public final class GentleUtils {
 		HttpURLConnection httpConnection = connection;
 		if(connection == null) {
 			if(LOG.isInfoEnabled()) { 
-				LOG.info("httpURLConnection is null...");
+				LOG.info("httpURLConnection is null... trying to reconnect to [" + url + "]");
 			}
 			if (url != null) {
 				httpConnection = getConnectionFor(url);
