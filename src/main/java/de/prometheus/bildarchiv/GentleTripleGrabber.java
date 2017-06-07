@@ -41,6 +41,7 @@ import org.openarchives.beans.OAIPMHtype;
 import org.openarchives.beans.RecordType;
 import org.openarchives.beans.ResumptionTokenType;
 
+import de.prometheus.bildarchiv.exception.NoSuchEndpointException;
 import de.prometheus.bildarchiv.exception.ResumptionTokenNullException;
 
 public final class GentleTripleGrabber {
