@@ -9,6 +9,7 @@ public class ProgressBar {
 
 	private int ratio;
 	private int i;
+	private static boolean INTERRUPTED;
 
 	public ProgressBar(int size) {
 		this.ratio = size / 100;
@@ -22,7 +23,11 @@ public class ProgressBar {
 	public void increment() {
 		synchronized (this) {
 			if (ratio == i) {
-				System.out.print("=");
+				if(INTERRUPTED) {
+					System.out.print(ANSI_GREEN);
+					INTERRUPTED = false;
+				}
+				System.out.print(ANSI_GREEN + "=");
 				i = 0;
 			}
 			i++;
@@ -34,7 +39,8 @@ public class ProgressBar {
 	}
 	
 	public static void error() {
-		System.out.println(" ... error occured!" + ANSI_RESET);
+		System.out.println(ANSI_RESET + ANSI_RED + " ... an error occured!" + ANSI_RESET);
+		INTERRUPTED = true;
 	}
 
 }
