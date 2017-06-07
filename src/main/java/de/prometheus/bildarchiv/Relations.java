@@ -11,11 +11,9 @@ import org.openarchives.beans.OAIPMHtype;
 import org.openarchives.beans.RecordType;
 
 /**
- * 
  * @author matana
- *
  */
-public final class Relations {
+public interface Relations {
 	
 	public static final String WURDE_GEZEIGT_IN = "221611b8-d627-42ee-baeb-4ba093a69a44";
 	public static final String MITGLIED_VON = "39f259c4-eda7-4849-936b-acc974eb0a7a";
@@ -61,11 +59,7 @@ public final class Relations {
 	public static final String GEHOERT_ZUR_AUSSTELLUNG = "9c8a6a15-cc3d-4a13-a77b-1faa3704ae56";
 	public static final String AUFTRAGGEBER_VON_WERK = "97b01978-e9f3-437a-851a-b37e3253ccec";
 
-	private Relations() {
-		super();
-	}
-
-	public static void main(String[] args) throws IOException, JAXBException {
+	public default void printRelations() throws IOException, JAXBException {
 		String url = Endpoint.RELATIONS.listRecords();
 		HttpURLConnection c = GentleUtils.getConnectionFor(url);
 		JAXBElement<OAIPMHtype> oai = GentleUtils.getElement(c, null);
