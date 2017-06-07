@@ -9,7 +9,7 @@ The generated jar file is located under <code>/ffm-import/target/ffm-import-jar-
 Rename the file from <code>ffm-import-jar-with-dependencies.jar</code> to <code>ffm.jar</code>.
   
 Running the programm:  
-<code>$ java -Xms1g -Xmx2g -c ./conf -jar ffm.jar -d ./data</code>
+<code>$ java -Xms1g -Xmx2g -jar ffm.jar -c ./conf -d ./data</code>
 
   
 ## Current data model  
