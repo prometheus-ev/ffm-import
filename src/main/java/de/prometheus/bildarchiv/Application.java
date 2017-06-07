@@ -1,6 +1,7 @@
 package de.prometheus.bildarchiv;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.util.Date;
 import java.util.Properties;
 
@@ -43,7 +44,7 @@ public class Application {
 		
 		CommandLineParser parser = new DefaultParser();
 		
-		String dataDir = "/tmp";
+		String dataDirectory = "/tmp";
 		
 		try {
 			
@@ -56,40 +57,44 @@ public class Application {
 			System.setProperty("log4j.configurationFile", log4jXml.getAbsolutePath());
 			LOG = LogManager.getLogger(GentleTripleGrabber.class);
 			
-			// conedaKor API configuration
+			// ConedaKor configuration
 			File endpointProperties = new File(configDir, "endpoint.properties");
 			Properties properties = GentleUtils.getProperties(endpointProperties);
 			System.setProperty("apiKey", properties.getProperty("apiKey"));
 			System.setProperty("baseUrl", properties.getProperty("baseUrl"));
 			
-			dataDir = cmd.getOptionValue("d") == null ? "/tmp" : cmd.getOptionValue("d");
+			if(cmd.getOptionValue("d") != null) {
+				dataDirectory =  cmd.getOptionValue("d");
+			}
 			
 			String extendedRelsXml = DateFormatUtils.format(new Date(), "dd-MM-yyyy") + "_extended_relationships.xml";
 			
 			if(LOG.isInfoEnabled()) { 
-				LOG.info("Final export file " + extendedRelsXml + " will be saved to " + dataDir);
+				LOG.info("Final export file " + extendedRelsXml + " will be saved to " + dataDirectory);
 			}
 			
-			GentleTripleGrabber gentleTripleGrabber = new GentleTripleGrabber();
+			GentleTripleGrabber gentleTripleGrabber = new GentleTripleGrabber(dataDirectory);
 			gentleTripleGrabber.listRecords(Endpoint.ENTITIES);
 			gentleTripleGrabber.listRecords(Endpoint.RELATIONSHIPS);
 
-			GentleSegmentMerger gentleSegmentMerger = new GentleSegmentMerger(dataDir, extendedRelsXml);
-			File extendedRelsFile = gentleSegmentMerger.merge(new File(new File("result"), dataDir));
+			GentleSegmentMerger gentleSegmentMerger = new GentleSegmentMerger(dataDirectory, extendedRelsXml);
+			File extendedRelsFile = gentleSegmentMerger.mergeEntitiesAndRelationships();
 
 			GentleDataExtractor gentleDataExtractor = new GentleDataExtractor(extendedRelsFile);
 			gentleDataExtractor.extractData();
 
 		} catch (JAXBException e) {
-			LOG.error(e.getLocalizedMessage());
+			LOG.error(e.toString());
 		} catch (NoSuchEndpointException e) {
-			LOG.error(e.getLocalizedMessage());
+			LOG.error(e.toString());
 		} catch (ParseException e) {
-			LOG.error(e.getLocalizedMessage());
+			LOG.error(e.toString());
+		} catch (FileNotFoundException e) {
+			LOG.error(e.toString());
 		} finally {
 			// Delete temporary created files on exit
-			File tmpEnt = new File(dataDir, Endpoint.ENTITIES.name());
-			File tmpRel = new File(dataDir, Endpoint.RELATIONSHIPS.name());
+			File tmpEnt = new File(dataDirectory, Endpoint.ENTITIES.name());
+			File tmpRel = new File(dataDirectory, Endpoint.RELATIONSHIPS.name());
 			tmpEnt.deleteOnExit();
 			tmpRel.deleteOnExit();
 		}

@@ -1,9 +1,8 @@
 package org.openarchives.beans;
 
-
-
-
 import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.List;
 
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
@@ -11,48 +10,13 @@ import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlSchemaType;
 import javax.xml.bind.annotation.XmlType;
+import javax.xml.bind.annotation.XmlValue;
 import javax.xml.datatype.XMLGregorianCalendar;
 
-/**
- * <p>
- * Java-Klasse für relationship complex type.
- * 
- * <p>
- * Das folgende Schemafragment gibt den erwarteten Content an, der in dieser
- * Klasse enthalten ist.
- * 
- * <pre>
- * &lt;complexType name="relationship"&gt;
- *   &lt;complexContent&gt;
- *     &lt;restriction base="{http://www.w3.org/2001/XMLSchema}anyType"&gt;
- *       &lt;sequence&gt;
- *         &lt;element name="id" type="{http://www.w3.org/2001/XMLSchema}string"/&gt;
- *         &lt;element name="created-at" type="{http://www.w3.org/2001/XMLSchema}dateTime"/&gt;
- *         &lt;element name="updated-at" type="{http://www.w3.org/2001/XMLSchema}dateTime"/&gt;
- *         &lt;element name="name" type="{http://www.w3.org/2001/XMLSchema}string"/&gt;
- *         &lt;element name="relation"&gt;
- *           &lt;complexType&gt;
- *             &lt;complexContent&gt;
- *               &lt;restriction base="{http://www.w3.org/2001/XMLSchema}anyType"&gt;
- *                 &lt;attribute name="id" use="required" type="{http://www.w3.org/2001/XMLSchema}string" /&gt;
- *                 &lt;attribute name="name" use="required" type="{http://www.w3.org/2001/XMLSchema}string" /&gt;
- *                 &lt;attribute name="reverse-name" use="required" type="{http://www.w3.org/2001/XMLSchema}string" /&gt;
- *               &lt;/restriction&gt;
- *             &lt;/complexContent&gt;
- *           &lt;/complexType&gt;
- *         &lt;/element&gt;
- *         &lt;element name="from" type="{http://www.w3.org/2001/XMLSchema}string"/&gt;
- *         &lt;element name="to" type="{http://www.w3.org/2001/XMLSchema}string"/&gt;
- *       &lt;/sequence&gt;
- *     &lt;/restriction&gt;
- *   &lt;/complexContent&gt;
- * &lt;/complexType&gt;
- * </pre>
- * 
- * 
- */
+
 @XmlAccessorType(XmlAccessType.FIELD)
-@XmlType(name = "relationship", propOrder = { "id", "createdAt", "updatedAt", "name", "relation", "from", "to" })
+@XmlType(name = "relationship", propOrder = { "id", "createdAt", "updatedAt", "name", "relation", "from", "to",
+		"properties" })
 public class ExtendedRelationship implements Serializable {
 
 	private static final long serialVersionUID = -8533040673528252526L;
@@ -68,35 +32,30 @@ public class ExtendedRelationship implements Serializable {
 	protected String name;
 	@XmlElement(required = true)
 	protected ExtendedRelationship.Relation relation;
-	
-	public ExtendedRelationship() {
-	}
-	
-//	@XmlElement(required = true)
-//	protected String from;
-	
 	@XmlElement(required = true)
 	protected Entity from;
-	
-//	@XmlElement(required = true)
-//	protected String to;
-	
 	@XmlElement(required = true)
 	protected Entity to;
+	@XmlElement(required = true)
+	protected ExtendedRelationship.Properties properties;
 
+	public ExtendedRelationship() {
+		
+	}
+	
 	// DeppCopy
-	public ExtendedRelationship(Relationship r) {
-		this.id = r.getId();
-		this.createdAt = r.getCreatedAt();
-		this.updatedAt = r.getUpdatedAt();
-		this.name = r.getName();
-		this.from = new Entity(r.getFrom());
-		this.to = new Entity(r.getTo());
-		Relation rel = new Relation();
-		rel.id = r.getRelation().getId();
-		rel.name = r.getRelation().getName();
-		rel.reverseName = r.getRelation().getReverseName();
-		this.relation =  rel;
+	public ExtendedRelationship(Relationship relationship) {
+		this.id = relationship.getId();
+		this.createdAt = relationship.getCreatedAt();
+		this.updatedAt = relationship.getUpdatedAt();
+		this.name = relationship.getName();
+		this.from = new Entity(relationship.getFrom());
+		this.to = new Entity(relationship.getTo());
+		Relation relation = new Relation();
+		relation.id = relationship.getRelation().getId();
+		relation.name = relationship.getRelation().getName();
+		relation.reverseName = relationship.getRelation().getReverseName();
+		this.relation = relation;
 	}
 
 	/**
@@ -345,7 +304,118 @@ public class ExtendedRelationship implements Serializable {
 
 	}
 
-	
+	@XmlAccessorType(XmlAccessType.FIELD)
+	public static class Properties implements Serializable {
+
+		private static final long serialVersionUID = -2108001315464156746L;
+		protected List<ExtendedRelationship.Properties.Property> property;
+
+		/**
+		 * Gets the value of the property property.
+		 * 
+		 * <p>
+		 * This accessor method returns a reference to the live list, not a
+		 * snapshot. Therefore any modification you make to the returned list
+		 * will be present inside the JAXB object. This is why there is not a
+		 * <CODE>set</CODE> method for the property property.
+		 * 
+		 * <p>
+		 * For example, to add a new item, do as follows:
+		 * 
+		 * <pre>
+		 * getProperty().add(newItem);
+		 * </pre>
+		 * 
+		 * 
+		 * <p>
+		 * Objects of the following type(s) are allowed in the list
+		 * {@link Entity.Properties.Property }
+		 * 
+		 * 
+		 */
+		public List<ExtendedRelationship.Properties.Property> getProperty() {
+			if (property == null) {
+				property = new ArrayList<ExtendedRelationship.Properties.Property>();
+			}
+			return this.property;
+		}
+
+		/**
+		 * <p>
+		 * Java-Klasse für anonymous complex type.
+		 * 
+		 * <p>
+		 * Das folgende Schemafragment gibt den erwarteten Content an, der in
+		 * dieser Klasse enthalten ist.
+		 * 
+		 * <pre>
+		 * &lt;complexType&gt;
+		 *   &lt;simpleContent&gt;
+		 *     &lt;extension base="&lt;http://www.w3.org/2001/XMLSchema&gt;string"&gt;
+		 *       &lt;attribute name="name" use="required" type="{http://www.w3.org/2001/XMLSchema}string" /&gt;
+		 *     &lt;/extension&gt;
+		 *   &lt;/simpleContent&gt;
+		 * &lt;/complexType&gt;
+		 * </pre>
+		 * 
+		 * 
+		 */
+		@XmlAccessorType(XmlAccessType.FIELD)
+		@XmlType(name = "", propOrder = { "value" })
+		public static class Property implements Serializable {
+
+			private static final long serialVersionUID = -6053401809134575239L;
+			@XmlValue
+			protected String value;
+			@XmlAttribute(name = "name", required = true)
+			protected String name;
+
+			/**
+			 * Ruft den Wert der value-Eigenschaft ab.
+			 * 
+			 * @return possible object is {@link String }
+			 * 
+			 */
+			public String getValue() {
+				return value;
+			}
+
+			/**
+			 * Legt den Wert der value-Eigenschaft fest.
+			 * 
+			 * @param value
+			 *            allowed object is {@link String }
+			 * 
+			 */
+			public void setValue(String value) {
+				this.value = value;
+			}
+
+			/**
+			 * Ruft den Wert der name-Eigenschaft ab.
+			 * 
+			 * @return possible object is {@link String }
+			 * 
+			 */
+			public String getName() {
+				return name;
+			}
+
+			/**
+			 * Legt den Wert der name-Eigenschaft fest.
+			 * 
+			 * @param value
+			 *            allowed object is {@link String }
+			 * 
+			 */
+			public void setName(String value) {
+				this.name = value;
+			}
+
+		}
+
+	}
+
 	@Override
 	public int hashCode() {
 		final int prime = 31;
@@ -391,9 +461,8 @@ public class ExtendedRelationship implements Serializable {
 
 	@Override
 	public String toString() {
-		return "Relationship [id=" + id + ", name=" + name + ", relationId="
-				+ relation.getId() + ", fromEntity=" + from.getId() + ", toEntity="
-				+ to.getId() + "]";
+		return "Relationship [id=" + id + ", name=" + name + ", relationId=" + relation.getId() + ", fromEntity="
+				+ from.getId() + ", toEntity=" + to.getId() + "properties=" + properties.getProperty() + "]";
 	}
 
 }

@@ -35,26 +35,27 @@ import de.prometheus.bildarchiv.exception.NoSuchEndpointException;
 
 public class GentleTripleGrabber {
 
-	private static final int CHUNK_SIZE = 2500;
+	private static Logger LOG = LogManager.getLogger(GentleTripleGrabber.class);
+	private String dataDirectory;
+	
+	public GentleTripleGrabber(final String dataDirectory)  {
+		this.dataDirectory = dataDirectory;
+	}
 
-	private static Logger LOG = LogManager.getLogger(GentleTripleGrabber.class);;
-
-	@SuppressWarnings("unchecked")
 	public void listRecords(Endpoint endpoint) throws NoSuchEndpointException {
 
-		int recordCount = 0;
-		int chunkCount = 0;
-
-		AtomicInteger index = new AtomicInteger();
 		ExecutorService executor = Executors.newFixedThreadPool(1);
-
-		@SuppressWarnings("rawtypes")
-		Set set = new HashSet<>();
-		String url = endpoint.listRecords();
-		JAXBElement<OAIPMHtype> oai = GentleUtils.getElement(GentleUtils.getConnectionFor(url), null);
+		AtomicInteger index = new AtomicInteger();
+		int recordCount = 0;
+		File parent = new File(new File(dataDirectory), endpoint.name());
+		parent.mkdirs();
+		
+		
+		String listRecordsUrl = endpoint.listRecords();
+		JAXBElement<OAIPMHtype> oai = GentleUtils.getElement(GentleUtils.getConnectionFor(listRecordsUrl), null);
 		ResumptionTokenType resumptionToken = oai.getValue().getListRecords().getResumptionToken();
 		List<RecordType> records = oai.getValue().getListRecords().getRecord();
-		BigInteger completeListSize = resumptionToken.getCompleteListSize();
+		final BigInteger completeListSize = resumptionToken.getCompleteListSize();
 
 		if (LOG.isInfoEnabled()) {
 			LOG.info("Fetching Data [completeListSize=" + completeListSize + "] from endpoint " + endpoint.name()
@@ -66,74 +67,38 @@ public class GentleTripleGrabber {
 
 		while (resumptionToken != null) {
 
-			switch (endpoint) {
-
-			case ENTITIES:
-				for (RecordType recordType : records) {
-					if (nullRecord(recordType))
-						continue;
-					else {
-						set.add(recordType.getMetadata().getEntity());
-						progressBar.increment();
-					}
-				}
-				break;
-			case RELATIONSHIPS:
-				for (RecordType recordType : records) {
-					if (nullRecord(recordType))
-						continue;
-					else {
-						set.add(recordType.getMetadata().getRelationship());
-						progressBar.increment();
-					}
-				}
-				break;
-			default:
-				throw new NoSuchEndpointException(
-						"NoSuchEndpointException: [Endpoint.ENTITIES, Endpoint.RELATIONSHIPS] " + endpoint);
-			}
-
-			chunkCount = set.size();
-
-			if (chunkCount >= CHUNK_SIZE) {
-				recordCount += set.size();
-				executor.execute(writeObject(endpoint.name(), new HashSet<>(set), index.incrementAndGet()));
-				set = new HashSet<>();
+			if (!nullOrEmptyRecords(records)) {
+				executor.execute(writeObject(parent, endpoint.name(), new HashSet<RecordType>(records), index.incrementAndGet()));
+				recordCount += records.size();
+				progressBar.increment();
 			}
 
 			if (resumptionToken.getValue() == null || resumptionToken.getValue().isEmpty()) {
 				break;
 			}
-
-			url = endpoint.listRecords(resumptionToken.getValue());
-
-			HttpURLConnection connectionFor = GentleUtils.getConnectionFor(url);
+			
+			listRecordsUrl = endpoint.listRecords(resumptionToken.getValue());
+			HttpURLConnection connectionFor = GentleUtils.getConnectionFor(listRecordsUrl);
 			oai = GentleUtils.getElement(connectionFor, endpoint.listRecords(resumptionToken.getValue()));
-			records = oai.getValue().getListRecords().getRecord();
 			resumptionToken = oai.getValue().getListRecords().getResumptionToken();
+			records = oai.getValue().getListRecords().getRecord();
 
 			try {
 				Thread.sleep(200); // the gentleness :-)
 			} catch (InterruptedException e) {
-				LOG.error(e.getLocalizedMessage());
+				LOG.error(e.toString());
 			}
 		}
-
-		recordCount += set.size(); // last increment of global counter
-
-		// save data chunk
-		executor.execute(writeObject(endpoint.name(), new HashSet<>(set), index.incrementAndGet()));
 
 		executor.shutdown();
 
 		try {
-			// wait until files are written
+			// wait until all files are written
 			executor.awaitTermination(10000, TimeUnit.MILLISECONDS);
+			progressBar.done();
 		} catch (InterruptedException e) {
-			e.printStackTrace();
+			LOG.error(e.getLocalizedMessage());
 		}
-
-		progressBar.done();
 
 		if (LOG.isInfoEnabled()) {
 			boolean b = completeListSize.intValue() == recordCount;
@@ -142,27 +107,21 @@ public class GentleTripleGrabber {
 		}
 	}
 
-	private boolean nullRecord(RecordType recordType) {
-		return recordType == null || recordType.getMetadata() == null;
+	private boolean nullOrEmptyRecords(List<RecordType> records) {
+		return records == null || records.isEmpty();
 	}
 
-	private Runnable writeObject(final String type, final Set<?> set, final int index) {
+	private Runnable writeObject(File parent, final String endpoint, final Set<?> data, final int index) {
 		return new Runnable() {
-
-			@Override
+ 			@Override
 			public void run() {
-				try {
-					File parent = new File(new File("/tmp"), type.toLowerCase());
-					parent.mkdirs();
-					File file = new File(parent, type + "_" + index + ".kor");
-					ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(file));
-					oos.writeObject(set);
-					oos.close();
+				try (ObjectOutputStream oos = new ObjectOutputStream(
+						new FileOutputStream(new File(parent, endpoint + "_" + index + ".kor")))) {
+					oos.writeObject(data);
 				} catch (IOException e) {
-					LOG.error(e.getLocalizedMessage());
+					LOG.error(e.toString());
 				}
 			}
-
 		};
 	}
 
@@ -178,7 +137,7 @@ public class GentleTripleGrabber {
 						writer.write(scanner.nextLine());
 					}
 				} catch (IOException e) {
-					LOG.error(e.getLocalizedMessage());
+					LOG.error(e.toString());
 				}
 			}
 		};
@@ -186,19 +145,15 @@ public class GentleTripleGrabber {
 
 	@SuppressWarnings("unused")
 	private void printLastRecordPage(InputStream inputStream) throws IOException {
-		BufferedInputStream bis = new BufferedInputStream(inputStream);
-		BufferedOutputStream bos = new BufferedOutputStream(System.out);
-		try {
-			int i;
-			while ((i = bis.read()) != -1) {
-				bos.write(i);
+		try (BufferedInputStream bis = new BufferedInputStream(inputStream); 
+				BufferedOutputStream bos = new BufferedOutputStream(System.out)){
+			int nextByte;
+			while ((nextByte = bis.read()) != -1) {
+				bos.write(nextByte);
 			}
 		} catch (IOException e) {
-			LOG.error(e.getLocalizedMessage());
-		} finally {
-			bis.close();
-			bos.close();
-		}
+			LOG.error(e.toString());
+		} 
 	}
 
 	@SuppressWarnings("unused")

@@ -39,11 +39,17 @@ import de.prometheus.bildarchiv.beans.Place;
 import de.prometheus.bildarchiv.beans.PrometheusImport;
 import de.prometheus.bildarchiv.beans.Work;
 
+/**
+ * This marvelous class is used to extract the information described in
+ * <a href="https://github.com/matana/ffm-import/blob/master/20170511_154237.jpg">the truth</a>
+ * @author matana
+ *
+ */
 public class GentleDataExtractor {
 
 	private static final Logger LOG = LogManager.getLogger(GentleDataExtractor.class);
 
-	private final File importFile;
+	private final File extendedRelsFile;
 
 	private transient Set<ExtendedRelationship> befindetSichIn;
 	private transient Set<ExtendedRelationship> hatGeschaffen;
@@ -69,17 +75,15 @@ public class GentleDataExtractor {
 	private transient Set<ExtendedRelationship> auftraggeberVonWerk;
 	private transient Set<ExtendedRelationship> ausstellungskatalogZu;
 
-	public GentleDataExtractor(final File importFile) {
+	public GentleDataExtractor(final File extendedRelsFile) {
 
-		super();
-
-		this.importFile = importFile;
+		this.extendedRelsFile = extendedRelsFile;
 
 		try {
-			
+
 			LOG.info("init-method called... filtering relationships from endpoint \"relation\" ");
 
-			final Set<ExtendedRelationship> relationships = getRelationships(importFile);
+			final Set<ExtendedRelationship> relationships = getRelationships(extendedRelsFile);
 
 			this.befindetSichIn = filterRelationships(relationships, Relations.BEFINDET_SICH_IN);
 			this.hatGeschaffen = filterRelationships(relationships, Relations.HAT_GESCHAFFEN);
@@ -147,22 +151,26 @@ public class GentleDataExtractor {
 			workObject.setMediums(mediumObjects);
 
 			// #2
-			Set<ExtendedRelationship> personWorkRel = filterSet(hatGeschaffen, x -> x.getTo().getId().equals(workEntity.getId()));
+			Set<ExtendedRelationship> personWorkRel = filterSet(hatGeschaffen,
+					x -> x.getTo().getId().equals(workEntity.getId()));
 			List<Person> creators = getCreators(personWorkRel);
 			workObject.setCreators(creators);
 
 			// #3
-			Set<ExtendedRelationship> workLitRel = filterSet(basisdatenZumWerkAus, x -> x.getFrom().getId().equals(workEntity.getId()));
+			Set<ExtendedRelationship> workLitRel = filterSet(basisdatenZumWerkAus,
+					x -> x.getFrom().getId().equals(workEntity.getId()));
 			List<Literature> illustrations = getLiterature(workLitRel);
 			workObject.setIllustrations(illustrations);
 
 			// #4
-			List<ExtendedRelationship> werkAusRel = filterList(ausgestellteWerke, x -> x.getTo().getId().equals(workEntity.getId()));
+			List<ExtendedRelationship> werkAusRel = filterList(ausgestellteWerke,
+					x -> x.getTo().getId().equals(workEntity.getId()));
 			List<Exhibition> exhibitions = getExhibitions(werkAusRel);
 			workObject.setExhibitions(exhibitions);
 
 			// #5 (Werk) befindet sich in (Institution)
-			List<ExtendedRelationship> workInstRel = filterList(befindetSichIn, x -> x.getFrom().getId().equals(workEntity.getId()));
+			List<ExtendedRelationship> workInstRel = filterList(befindetSichIn,
+					x -> x.getFrom().getId().equals(workEntity.getId()));
 			if (!workInstRel.isEmpty()) {
 				Entity institutionEntity = workInstRel.get(0).getTo();
 				Institution institutionObject = getInstitution(institutionEntity);
@@ -170,24 +178,28 @@ public class GentleDataExtractor {
 			}
 
 			// #6 (Person) ist Auftraggeber von (Werk)
-			List<ExtendedRelationship> comWorkRel = filterList(auftraggeberVonWerk, x -> x.getTo().getId().equals(workEntity.getId()));
+			List<ExtendedRelationship> comWorkRel = filterList(auftraggeberVonWerk,
+					x -> x.getTo().getId().equals(workEntity.getId()));
 			if (!comWorkRel.isEmpty()) {
 				Person commissionerObject = getPerson(comWorkRel.get(0).getFrom(), 0);
 				workObject.setCommissioner(commissionerObject);
 			}
 
 			// #7 (Werk) steht in Verbindung zu (Werk)
-			List<ExtendedRelationship> workConRel = filterList(stehtInVerbindungZu, x -> x.getTo().getId().equals(workEntity.getId()));
+			List<ExtendedRelationship> workConRel = filterList(stehtInVerbindungZu,
+					x -> x.getTo().getId().equals(workEntity.getId()));
 			List<String> connections = getConnections(workConRel);
 			workObject.setConnectionsTo(connections);
 
 			// #8 (Werk) ist Teil von (Werk)
-			List<ExtendedRelationship> workPartRel = filterList(istTeilVon, x -> x.getFrom().getId().equals(workEntity.getId()));
+			List<ExtendedRelationship> workPartRel = filterList(istTeilVon,
+					x -> x.getFrom().getId().equals(workEntity.getId()));
 			List<Part> relations = getWorkRelations(workPartRel);
 			workObject.setParts(relations);
 
 			// #9 (Werk) stellt dar (Person)
-			List<ExtendedRelationship> workPerRel = filterList(stelltDar, x -> x.getFrom().getId().equals(workEntity.getId()));
+			List<ExtendedRelationship> workPerRel = filterList(stelltDar,
+					x -> x.getFrom().getId().equals(workEntity.getId()));
 			List<Person> portrayals = getPortrayals(workPerRel);
 			if (!portrayals.isEmpty()) {
 				workObject.setPortrayal(portrayals.get(0));
@@ -263,7 +275,7 @@ public class GentleDataExtractor {
 
 		Marshaller marshaller = jaxbContext.createMarshaller();
 		marshaller.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, true);
-		marshaller.marshal(element, new File(importFile.getParent(),
+		marshaller.marshal(element, new File(extendedRelsFile.getParent(),
 				DateFormatUtils.format(new Date(), "dd-MM-yyyy") + "_conedakor_dump.xml"));
 
 		if (LOG.isInfoEnabled()) {
@@ -271,7 +283,8 @@ public class GentleDataExtractor {
 		}
 	}
 
-	private Set<ExtendedRelationship> getRelationships(final File importFile) throws InterruptedException, ExecutionException, FileNotFoundException, JAXBException {
+	private Set<ExtendedRelationship> getRelationships(final File importFile)
+			throws InterruptedException, ExecutionException, FileNotFoundException, JAXBException {
 		JAXBContext jaxbContext = JAXBContext.newInstance(Prometheus.class);
 		Unmarshaller jaxbUnmarshaller = jaxbContext.createUnmarshaller();
 		StreamSource streamSource = new StreamSource(
@@ -281,7 +294,8 @@ public class GentleDataExtractor {
 		return prometheus.getRelations();
 	}
 
-	private List<ExtendedRelationship> filterList(final Set<ExtendedRelationship> relation, Predicate<ExtendedRelationship> predicte) {
+	private List<ExtendedRelationship> filterList(final Set<ExtendedRelationship> relation,
+			Predicate<ExtendedRelationship> predicte) {
 		return relation.stream().filter(predicte).collect(Collectors.toList());
 	}
 
@@ -290,7 +304,8 @@ public class GentleDataExtractor {
 		return relation.stream().filter(predicte).collect(Collectors.toSet());
 	}
 
-	private Set<ExtendedRelationship> filterRelationships(final Set<ExtendedRelationship> relationships, final String id) {
+	private Set<ExtendedRelationship> filterRelationships(final Set<ExtendedRelationship> relationships,
+			final String id) {
 		return relationships.stream().filter(r -> r.getRelation().getId().equals(id)).collect(Collectors.toSet());
 	}
 
@@ -309,20 +324,23 @@ public class GentleDataExtractor {
 		// exhibitionObject.setExhibitionVenue(new Place());
 
 		// (Austellung) kuratiert von (Person)
-		List<ExtendedRelationship> ausstellungKuratiertVon = filterList(kuratiertVon, x -> x.getFrom().getId().equals(entity.getId()));
+		List<ExtendedRelationship> ausstellungKuratiertVon = filterList(kuratiertVon,
+				x -> x.getFrom().getId().equals(entity.getId()));
 		if (!ausstellungKuratiertVon.isEmpty()) {
 			Entity curator = ausstellungKuratiertVon.get(0).getTo();
 			Person curatorObject = getPerson(curator, 0);
 			exhibitionObject.setCurator(curatorObject);
 		}
 		// (Austellung) wurde gezeigt in (Ort)
-		List<ExtendedRelationship> gezeigtIn = filterList(wurdeGezeigtIn, x -> x.getFrom().getId().equals(entity.getId()));
+		List<ExtendedRelationship> gezeigtIn = filterList(wurdeGezeigtIn,
+				x -> x.getFrom().getId().equals(entity.getId()));
 		if (!gezeigtIn.isEmpty()) {
 			Place exhibitionVenue = new Place(gezeigtIn.get(0).getTo());
 			exhibitionObject.setExhibitionVenue(exhibitionVenue);
 		}
 		// (Ausstellung) Ausstellungskatalog zu Ausstellung (Literatur)
-		List<ExtendedRelationship> ausstellungskatalogZuLit = filterList(ausstellungskatalogZu, x -> x.getTo().getId().equals(entity.getId()));
+		List<ExtendedRelationship> ausstellungskatalogZuLit = filterList(ausstellungskatalogZu,
+				x -> x.getTo().getId().equals(entity.getId()));
 		if (!ausstellungskatalogZuLit.isEmpty()) {
 			Entity exhibitionCatalog = ausstellungskatalogZuLit.get(0).getFrom();
 			Literature exhibitionCatalogObject = getLiterature(exhibitionCatalog);
@@ -349,34 +367,39 @@ public class GentleDataExtractor {
 		// literatureObject.setMedia(new ArrayList<>());
 
 		// Person ist Autor/in von Literatur
-		List<ExtendedRelationship> autorInVonLit = filterList(autorInVon, x -> x.getTo().getId().equals(entity.getId()));
+		List<ExtendedRelationship> autorInVonLit = filterList(autorInVon,
+				x -> x.getTo().getId().equals(entity.getId()));
 		if (!autorInVonLit.isEmpty()) {
 			Entity author = autorInVonLit.get(0).getFrom();
 			literatureObject.setAuthor(getPerson(author, 0));
 		}
 
 		// Person ist Herausgeberin/in von Literatur
-		List<ExtendedRelationship> herausgeberInVonLit = filterList(herausgeberInVon, x -> x.getTo().getId().equals(entity.getId()));
+		List<ExtendedRelationship> herausgeberInVonLit = filterList(herausgeberInVon,
+				x -> x.getTo().getId().equals(entity.getId()));
 		if (!herausgeberInVonLit.isEmpty()) {
 			Entity publisher = herausgeberInVonLit.get(0).getFrom();
 			literatureObject.setPublisher(getPerson(publisher, 0));
 		}
 
 		// Literatur erschienen in Ort
-		List<ExtendedRelationship> erschienenInOrt = filterList(erschienenIn, x -> x.getFrom().getId().equals(entity.getId()));
+		List<ExtendedRelationship> erschienenInOrt = filterList(erschienenIn,
+				x -> x.getFrom().getId().equals(entity.getId()));
 		if (!erschienenInOrt.isEmpty()) {
 			Place publishedIn = new Place(erschienenInOrt.get(0).getTo());
 			literatureObject.setPublishedIn(publishedIn);
 		}
 
 		// Literatur Sammlungskatalog von Institution
-		List<ExtendedRelationship> sammlungskatalogInst = filterList(sammlungskatalog, x -> x.getFrom().getId().equals(entity.getId()));
+		List<ExtendedRelationship> sammlungskatalogInst = filterList(sammlungskatalog,
+				x -> x.getFrom().getId().equals(entity.getId()));
 		if (!sammlungskatalogInst.isEmpty()) {
 			literatureObject.setCollectionCatalog(getInstitution(sammlungskatalogInst.get(0).getTo()));
 		}
 
 		// (Literatur) Literatur enthält Bilddatei (Medium)
-		Set<ExtendedRelationship> media = filterSet(literaturEnthaeltBilddatei, x -> x.getFrom().getId().equals(entity.getId()));
+		Set<ExtendedRelationship> media = filterSet(literaturEnthaeltBilddatei,
+				x -> x.getFrom().getId().equals(entity.getId()));
 		List<String> mediums = media.stream().map(ExtendedRelationship::getTo).map(Entity::getId)
 				.collect(Collectors.toList());
 
@@ -403,23 +426,25 @@ public class GentleDataExtractor {
 			}
 
 			Entity medium = relShip.getFrom();
-			
+
 			Medium mediumObject = new Medium(medium);
 			// TODO: Avoid instantiating empty objects
 			// mediumObject.setExploitationRight(new Institution());
 			// mediumObject.setPhotographers(new ArrayList<>());
-			List<ExtendedRelationship> rechtAmFoto = filterList(verwertungsrechtAmFoto, x -> x.getFrom().getId().equals(medium.getId()));
+			List<ExtendedRelationship> rechtAmFoto = filterList(verwertungsrechtAmFoto,
+					x -> x.getFrom().getId().equals(medium.getId()));
 			if (!rechtAmFoto.isEmpty()) {
 				Entity rights = rechtAmFoto.get(0).getTo();
 				mediumObject.setExploitationRight(getInstitution(rights));
 			}
 			List<Person> photographers = new ArrayList<>();
-			List<ExtendedRelationship> mediumPerson = filterList(fotografiertVon, x -> x.getFrom().getId().equals(medium.getId()));
+			List<ExtendedRelationship> mediumPerson = filterList(fotografiertVon,
+					x -> x.getFrom().getId().equals(medium.getId()));
 			mediumPerson.forEach(mp -> {
 				Person photographerObject = getPerson(mp.getTo(), 0);
 				photographers.add(photographerObject);
 			});
-			
+
 			mediumObject.setPhotographers(photographers);
 			mediums.add(mediumObject);
 		}
@@ -436,8 +461,9 @@ public class GentleDataExtractor {
 	 */
 	private Institution getInstitution(final Entity entity) {
 		Institution institution = new Institution(entity);
-//		institution.setLocation(new Place());
-		List<ExtendedRelationship> locations = filterList(institutionInOrt, x -> x.getFrom().getId().equals(entity.getId()));
+		// institution.setLocation(new Place());
+		List<ExtendedRelationship> locations = filterList(institutionInOrt,
+				x -> x.getFrom().getId().equals(entity.getId()));
 		List<Entity> locs = locations.stream().map(ExtendedRelationship::getTo).collect(Collectors.toList());
 		if (!locs.isEmpty()) {
 			institution.setLocation(new Place(locs.get(0)));
@@ -454,9 +480,10 @@ public class GentleDataExtractor {
 	 */
 	private Person getPerson(final Entity entity, int depth) {
 		Person personObject = new Person(entity);
-		personObject.setTeachers(new ArrayList<>());
-		personObject.setBirthPlace(new Place());
-		personObject.setPlaceOfDeath(new Place());
+		// TODO: Avoid instantiating empty objects
+		// personObject.setTeachers(new ArrayList<>());
+		// personObject.setBirthPlace(new Place());
+		// personObject.setPlaceOfDeath(new Place());
 
 		// (Ort) Geburtsort von (Person)
 		List<ExtendedRelationship> geborenIn = filterList(geburtsortVon, x -> x.getTo().getId().equals(entity.getId()));
@@ -476,7 +503,8 @@ public class GentleDataExtractor {
 
 		// (Person) Schüler/in von (Person)
 		List<Person> teachers = new ArrayList<>();
-		List<ExtendedRelationship> students = filterList(schuelerInVon, x -> x.getFrom().getId().equals(entity.getId()));
+		List<ExtendedRelationship> students = filterList(schuelerInVon,
+				x -> x.getFrom().getId().equals(entity.getId()));
 		for (ExtendedRelationship s : students) {
 			Entity teacherEntity = s.getTo();
 			Person teacherObject = getPerson(teacherEntity, (depth + 1));

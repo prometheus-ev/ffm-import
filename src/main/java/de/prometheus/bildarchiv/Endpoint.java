@@ -1,7 +1,5 @@
 package de.prometheus.bildarchiv;
 
-import de.prometheus.bildarchiv.exception.ResumptionTokenNullException;
-
 public enum Endpoint {
 
 	ENTITIES("entities?"), KINDS("kinds?"), RELATIONS("relations?"), RELATIONSHIPS("relationships?");
@@ -30,9 +28,7 @@ public enum Endpoint {
 		return baseUrl + endpoint + listRecords + prefix + apiKey;
 	}
 
-	public String listRecords(final String token) throws ResumptionTokenNullException {
-		if (token == null)
-			throw new ResumptionTokenNullException();
+	public String listRecords(final String token) {
 		return baseUrl + endpoint + listRecords + prefix + apiKey + resumptionToken + token;
 	}
 

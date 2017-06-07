@@ -31,124 +31,125 @@ import org.openarchives.beans.Entity;
 import org.openarchives.beans.ExtendedRelationship;
 import org.openarchives.beans.OAIPMHtype;
 import org.openarchives.beans.Prometheus;
+import org.openarchives.beans.RecordType;
 import org.openarchives.beans.Relationship;
 
 public class GentleSegmentMerger {
-	
-	private static final Logger LOG = LogManager.getLogger(GentleSegmentMerger.class);
-	private final String exportFileName;
-	private final String destination;
 
-	GentleSegmentMerger(final String destination, final String exportFileName) {
-		this.destination = destination;
-		this.exportFileName = exportFileName;
+	private static final Logger LOG = LogManager.getLogger(GentleSegmentMerger.class);
+
+	private final String extendedRelsXml;
+	private final String dataDirectory;
+	private List<Relationship> relationshipsList;
+	private List<Entity> entitiesList;
+
+	public GentleSegmentMerger(final String dataDirectory, final String extendedRelsXml) {
+		this.dataDirectory = dataDirectory;
+		this.extendedRelsXml = extendedRelsXml;
 	}
-	
-	/**
-	 * 
-	 * @return
-	 */
-	public File merge() {
+
+	public File mergeEntitiesAndRelationships() throws PropertyException, JAXBException, FileNotFoundException {
 
 		long time = System.currentTimeMillis();
-		
-		try {
-			
-			if(LOG.isInfoEnabled()) {
-				LOG.info("Unmarshalling 'relationships' and 'entities' ...");
-			}
-			
-			File tmpDir = new File("/tmp");
-			tmpDir.mkdirs();
-			
-			File[] files = get(new File(tmpDir, "RELATIONSHIPS/"), ".kor");
-			Set<Relationship> relationships = new HashSet<>();
-			for (File f : files) {
-				@SuppressWarnings({ "unchecked", "rawtypes" })
-				Set<Relationship> s = (Set) readObject(f);
-				relationships.addAll(s);
-			}
-			
-			files = get(new File(tmpDir, "ENTITIES/"), ".kor");
-			Set<Entity> entities = new HashSet<>();
-			for (File f : files) {
-				@SuppressWarnings({ "unchecked", "rawtypes" })
-				Set<Entity> s = (Set) readObject(f);
-				entities.addAll(s);
-			}
-			
-			List<Entity> sortedEntities = new ArrayList<>(entities);
-			Collections.sort(sortedEntities);
-			Set<String> notRetrieved = new HashSet<>();
-			Set<ExtendedRelationship> toXml = new HashSet<>();
-			
-			ProgressBar p = new ProgressBar(relationships.size());
-			p.start();
-			
-			for (Relationship r : relationships) {
-				ExtendedRelationship rs = new ExtendedRelationship(r);
 
-				Entity e = find(r.getFrom(), sortedEntities);
-				if (e != null) rs.setFrom(e);
-				else notRetrieved.add(r.getFrom());
-
-				e = find(r.getTo(), sortedEntities);
-				if (e != null) rs.setTo(e);
-				else notRetrieved.add(r.getTo());
-
-				toXml.add(rs);
-				
-				p.increment();
-			}
-			p.done();
-			
-			final Set<Entity> result = Collections.synchronizedSet(new HashSet<Entity>());
-			
-			if (notRetrieved.size() > 0) {
-				if(LOG.isInfoEnabled()) {
-					LOG.info("Count of missing records: " + notRetrieved.size());
-				}
-				getMissingRecords(notRetrieved, result, toXml);
-			}
-			
-			File desFolder = new File(destination);  
-			File exportFile = new File(desFolder, exportFileName);
-			
-			if(LOG.isInfoEnabled()) {
-				LOG.info("Creating export file " + exportFile.getAbsolutePath());
-			}
-				
-			exportXml(toXml, exportFile);
-			
-			if(LOG.isInfoEnabled()) {
-				long duration = System.currentTimeMillis() - time;
-				LOG.info("Done! ...took " + ((duration / 1000) / 60) + " min");
-			}
-			
-			
-			return exportFile;
-			
-		} catch (FileNotFoundException e) {
-			LOG.error(e.getLocalizedMessage());
-		} catch (ClassNotFoundException e) {
-			LOG.error(e.getLocalizedMessage());
-		} catch (IOException e) {
-			LOG.error(e.getLocalizedMessage());
-		} catch (PropertyException e) {
-			LOG.error(e.getLocalizedMessage());
-		} catch (JAXBException e) {
-			LOG.error(e.getLocalizedMessage());
+		if (LOG.isInfoEnabled()) {
+			LOG.info("Unmarshalling 'relationships' and 'entities' ...");
 		}
-		
-		return null;
+
+		Set<RecordType> relationships = getRecords(new File(dataDirectory, "RELATIONSHIPS/"));
+		getRelationships(relationships);
+
+		Set<RecordType> entities = getRecords(new File(dataDirectory, "ENTITIES/"));
+		getEntities(entities);
+
+		List<Entity> sortedEntities = new ArrayList<>(entitiesList);
+		Collections.sort(sortedEntities);
+		Set<String> notRetrieved = new HashSet<>();
+		Set<ExtendedRelationship> extendedRelsSet = new HashSet<>();
+
+		for (Relationship relationship : relationshipsList) {
+			ExtendedRelationship extendedRelationship = new ExtendedRelationship(relationship);
+
+			Entity fromEntity = find(relationship.getFrom(), sortedEntities);
+			if (fromEntity != null) {
+				extendedRelationship.setFrom(fromEntity);
+			} else {
+				notRetrieved.add(relationship.getFrom());
+			}
+
+			Entity toEntity = find(relationship.getTo(), sortedEntities);
+			if (toEntity != null) {
+				extendedRelationship.setTo(toEntity);
+			} else {
+				notRetrieved.add(relationship.getTo());
+			}
+
+			extendedRelsSet.add(extendedRelationship);
+
+		}
+
+		if (!notRetrieved.isEmpty()) {
+			getMissingRecords(notRetrieved, extendedRelsSet);
+		}
+
+		File extendedRelsXmlFile = new File(dataDirectory, extendedRelsXml);
+
+		if (LOG.isInfoEnabled()) {
+			LOG.info("Creating export file " + extendedRelsXmlFile.getAbsolutePath());
+		}
+
+		exportXml(extendedRelsSet, new File(dataDirectory, extendedRelsXml));
+
+		if (LOG.isInfoEnabled()) {
+			long duration = System.currentTimeMillis() - time;
+			LOG.info("Done! ...took " + ((duration / 1000) / 60) + " min");
+		}
+
+		return extendedRelsXmlFile;
+
+	}
+
+	private void getEntities(Set<RecordType> entities) {
+		entitiesList = new ArrayList<>();
+		for (RecordType recordType : entities) {
+			if (valid(recordType)) {
+				entitiesList.add(recordType.getMetadata().getEntity());
+			}
+		}
+	}
+
+	private void getRelationships(Set<RecordType> relationships) {
+		relationshipsList = new ArrayList<>();
+		for (RecordType recordType : relationships) {
+			if (valid(recordType)) {
+				relationshipsList.add(recordType.getMetadata().getRelationship());
+			}
+		}
+	}
+
+	private boolean valid(RecordType recordType) {
+		return recordType != null && recordType.getHeader() != null && recordType.getMetadata() != null;
+	}
+
+	private Set<RecordType> getRecords(final File dir) throws FileNotFoundException {
+		File[] files = getFiles(dir, ".kor");
+		Set<RecordType> records = new HashSet<>();
+		for (File file : files) {
+			records.addAll(readObject(file));
+		}
+		return records;
 	}
 
 	@SuppressWarnings("unchecked")
-	private static Set<Object> readObject(File file) throws ClassNotFoundException, IOException {
-		ObjectInputStream ois = new ObjectInputStream(new FileInputStream(file));
-		Set<Object> object = (Set<Object>) ois.readObject();
-		ois.close();
-		return object;
+	private Set<RecordType> readObject(File file) {
+		try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream(file))) {
+			return (Set<RecordType>) ois.readObject();
+		} catch (IOException e) {
+			LOG.error(e.toString());
+		} catch (ClassNotFoundException e) {
+			LOG.error(e.toString());
+		}
+		return null;
 	}
 
 	private void exportXml(Set<ExtendedRelationship> toXml, File file) throws JAXBException, PropertyException {
@@ -164,67 +165,42 @@ public class GentleSegmentMerger {
 		marshaller.marshal(element, file);
 	}
 
-	private void getMissingRecords(final Set<String> notRetrieved, Set<Entity> result,
-			Set<ExtendedRelationship> asXml) {
+	private void getMissingRecords(final Set<String> notRetrieved, Set<ExtendedRelationship> extendedRelsSet) {
 
-		// chunk missing record items to 2500 blocks
-		List<Set<String>> sets = new ArrayList<>();
-		Set<String> set = new HashSet<>();
-		List<String> tmp = new ArrayList<>(notRetrieved);
-		for (int i = 0, n = 0; i < tmp.size(); i++) {
-			if (n == 2500) {
-				sets.add(set);
-				set = new HashSet<>();
-				n = 0;
+		ExecutorService executor = Executors.newFixedThreadPool(1);
+		Future<Set<Entity>> submit = executor.submit(new RequestCallable(notRetrieved));
+
+		try {
+			if (LOG.isInfoEnabled()) {
+				LOG.info("Retrieving missing " + notRetrieved.size() + "entities... this might take a moment.");
 			}
-			set.add(tmp.get(i));
-			n++;
-		}
-		sets.add(set);
 
-		ExecutorService executor = Executors.newFixedThreadPool(sets.size());
-		List<Future<Set<Entity>>> futures = new ArrayList<>();
+			List<Entity> missing = new ArrayList<>(submit.get());
+			Collections.sort(missing);
+			for (ExtendedRelationship extendedRelationship : extendedRelsSet) {
 
-		
-		for (Set<String> s : sets) {
-			Future<Set<Entity>> future = executor.submit(new RequestCallable(new HashSet<>(s)));
-			futures.add(future);
-		}
-		
-		if(LOG.isInfoEnabled()) { 
-			LOG.info("Retrieving missing entities... this might take a moment (" + futures.size() + " threads)");
-		}
-		
-		for (Future<Set<Entity>> future : futures) {
-			try {
-				result.addAll(future.get());
-			} catch (InterruptedException | ExecutionException e) {
-				LOG.error(e.getLocalizedMessage());
+				Entity fromEntity = find(extendedRelationship.getFrom().getId(), missing);
+				Entity toEntity = find(extendedRelationship.getTo().getId(), missing);
+
+				extendedRelationship.setFrom(fromEntity != null ? fromEntity : extendedRelationship.getFrom());
+				extendedRelationship.setTo(toEntity != null ? toEntity : extendedRelationship.getTo());
 			}
+
+		} catch (InterruptedException | ExecutionException e) {
+			LOG.error(e.toString());
 		}
 		executor.shutdown();
-
-		// add missing records to xml export
-		List<Entity> sortedEntities = new ArrayList<>(result);
-		Collections.sort(sortedEntities);
-		for (ExtendedRelationship rs : asXml) {
-			Entity from = find(rs.getFrom().getId(), sortedEntities);
-			Entity to = find(rs.getTo().getId(), sortedEntities);
-			rs.setFrom(from != null ? from : rs.getFrom());
-			rs.setTo(to != null ? to : rs.getTo());
-		}
 	}
 
-	private static Entity find(final String id, List<Entity> list) {
-		int toIndex = Collections.binarySearch(list, new Entity(id));
-		if (toIndex > 0) {
-			Entity e = list.get(toIndex);
-			return e;
+	private static Entity find(final String id, List<Entity> orderedList) {
+		int index = Collections.binarySearch(orderedList, new Entity(id));
+		if (index > 0) {
+			return orderedList.get(index);
 		}
 		return null;
 	}
 
-	private static File[] get(File dir, final String suffix) throws FileNotFoundException {
+	private File[] getFiles(File dir, final String suffix) throws FileNotFoundException {
 		if (!dir.exists())
 			throw new FileNotFoundException(dir.getAbsolutePath());
 		File[] files = dir.listFiles(new FileFilter() {
@@ -238,29 +214,43 @@ public class GentleSegmentMerger {
 
 	class RequestCallable implements Callable<Set<Entity>> {
 
-		private Set<String> ids;
+		private Set<String> entities;
 
-		RequestCallable(final Set<String> ids) {
-			this.ids = ids;
+		RequestCallable(final Set<String> entities) {
+			this.entities = entities;
 		}
 
 		@Override
 		public Set<Entity> call() throws Exception {
-			Set<Entity> tmp = new HashSet<>();
-			for (String id : ids) {
+			
+			Set<Entity> toReturn = new HashSet<>();
+			
+			for (String id : entities) {
+				
 				String url = Endpoint.ENTITIES.getRecord(id);
 				HttpURLConnection c = GentleUtils.getConnectionFor(url);
-				JAXBElement<OAIPMHtype> element = GentleUtils.getElement(c, null);
-				Entity entity = element.getValue().getGetRecord().getRecord().getMetadata().getEntity();
-				tmp.add(entity);
+				JAXBElement<OAIPMHtype> oai = GentleUtils.getElement(c, null);
+				
+				if (valid(oai)) {
+					Entity entity = oai.getValue().getGetRecord().getRecord().getMetadata().getEntity();
+					toReturn.add(entity);
+				}
+
 				try {
 					Thread.sleep(200);
 				} catch (InterruptedException e) {
-					LOG.error(e.getLocalizedMessage());
+					LOG.error(e.toString());
 				}
 			}
 
-			return tmp;
+			return toReturn;
+		}
+
+		private boolean valid(JAXBElement<OAIPMHtype> oai) {
+			return oai != null && oai.getValue() != null && oai.getValue().getGetRecord() != null
+					&& oai.getValue().getGetRecord().getRecord() != null
+					&& oai.getValue().getGetRecord().getRecord().getMetadata() != null
+					&& oai.getValue().getGetRecord().getRecord().getMetadata().getEntity() != null;
 		}
 	}
 
