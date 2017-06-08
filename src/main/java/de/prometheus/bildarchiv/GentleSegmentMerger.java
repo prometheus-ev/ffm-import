@@ -41,8 +41,10 @@ public class GentleSegmentMerger {
 	private final String dataDirectory;
 
 	public GentleSegmentMerger(final String dataDirectory, final String extendedRelsXml) {
+		
 		this.dataDirectory = dataDirectory;
 		this.extendedRelsXml = extendedRelsXml;
+	
 	}
 
 	public File mergeEntitiesAndRelationships() throws PropertyException, JAXBException, FileNotFoundException {
@@ -66,6 +68,7 @@ public class GentleSegmentMerger {
 		Set<ExtendedRelationship> extendedRelsSet = new HashSet<>();
 
 		for (Relationship relationship : relationships) {
+			
 			ExtendedRelationship extendedRelationship = new ExtendedRelationship(relationship);
 
 			Entity fromEntity = find(relationship.getFrom(), sortedEntities);
@@ -76,6 +79,7 @@ public class GentleSegmentMerger {
 			}
 
 			Entity toEntity = find(relationship.getTo(), sortedEntities);
+			
 			if (toEntity != null) {
 				extendedRelationship.setTo(toEntity);
 			} else {
@@ -108,16 +112,20 @@ public class GentleSegmentMerger {
 	}
 
 	private Set<RecordType> getRecords(final File dir) throws FileNotFoundException {
+		
 		File[] files = getFiles(dir, ".kor");
 		Set<RecordType> records = new HashSet<>();
+		
 		for (File file : files) {
 			records.addAll(readObject(file));
 		}
+		
 		return records;
 	}
 
 	@SuppressWarnings("unchecked")
 	private Set<RecordType> readObject(File file) {
+		
 		try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream(file))) {
 			return (Set<RecordType>) ois.readObject();
 		} catch (IOException e) {
@@ -125,10 +133,12 @@ public class GentleSegmentMerger {
 		} catch (ClassNotFoundException e) {
 			logger.error(e.toString());
 		}
+		
 		return null;
 	}
 
 	private void exportXml(Set<ExtendedRelationship> toXml, File file) throws JAXBException, PropertyException {
+		
 		Prometheus prom = new Prometheus();
 		prom.setRelationships(toXml);
 
@@ -139,6 +149,7 @@ public class GentleSegmentMerger {
 		Marshaller marshaller = jaxbContext.createMarshaller();
 		marshaller.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, true);
 		marshaller.marshal(element, file);
+		
 	}
 
 	private void getMissingRecords(final Set<String> notRetrieved, Set<ExtendedRelationship> extendedRelsSet) {
@@ -147,6 +158,7 @@ public class GentleSegmentMerger {
 		Future<Set<Entity>> submit = executor.submit(new RequestCallable(notRetrieved));
 
 		try {
+			
 			if (logger.isInfoEnabled()) {
 				logger.info("Retrieving missing " + notRetrieved.size() + "entities... this might take a moment.");
 			}
@@ -165,26 +177,34 @@ public class GentleSegmentMerger {
 		} catch (InterruptedException | ExecutionException e) {
 			logger.error(e.toString());
 		}
+		
 		executor.shutdown();
 	}
 
 	private static Entity find(final String id, List<Entity> orderedList) {
+		
 		int index = Collections.binarySearch(orderedList, new Entity(id));
-		if (index > 0) {
+		
+		if (index >= 0) {
 			return orderedList.get(index);
 		}
+		
 		return null;
 	}
 
 	private File[] getFiles(File dir, final String suffix) throws FileNotFoundException {
-		if (!dir.exists())
+		
+		if (!dir.exists()) {
 			throw new FileNotFoundException(dir.getAbsolutePath());
+		}
+		
 		File[] files = dir.listFiles(new FileFilter() {
 			@Override
 			public boolean accept(File pathname) {
 				return pathname.getName().endsWith(suffix);
 			}
 		});
+		
 		return files;
 	}
 
