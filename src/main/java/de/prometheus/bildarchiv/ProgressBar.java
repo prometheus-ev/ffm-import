@@ -20,17 +20,17 @@ public class ProgressBar {
 		System.out.print(ANSI_GREEN + "|");
 	}
 
-	public void increment() {
+	public void increment(int incremential) {
 		synchronized (this) {
-			if (ratio == i) {
+			if (i >= ratio) {
 				if(INTERRUPTED) {
 					System.out.print(ANSI_GREEN);
 					INTERRUPTED = false;
 				}
-				System.out.print(ANSI_GREEN + "=");
+				System.out.print("=");
 				i = 0;
 			}
-			i++;
+			i += incremential;
 		}
 	}
 
