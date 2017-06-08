@@ -21,7 +21,7 @@ import de.prometheus.bildarchiv.exception.NoSuchEndpointException;
 
 public class Application {
 
-	private static Logger LOG;
+	private static Logger logger;
 
 	/**
 	 * <p> A gentle command line tool for harvesting OAI-PMH XML data provided by
@@ -36,7 +36,7 @@ public class Application {
 		Option configOption = new Option("c", "config", true, "The configuration directory");
 		configOption.setRequired(true);
 		
-		Option destinationOption = new Option("d", "data", true, "The data directory for temporary files and the ouput xml");
+		Option destinationOption = new Option("d", "data", true, "The data directory contains temporary and output files");
 		destinationOption.setRequired(false);
 		
 		options.addOption(configOption);
@@ -55,7 +55,7 @@ public class Application {
 			// Logger configuration
 			File log4jXml = new File(configDir, "log4j2.xml");
 			System.setProperty("log4j.configurationFile", log4jXml.getAbsolutePath());
-			LOG = LogManager.getLogger(GentleTripleGrabber.class);
+			logger = LogManager.getLogger(GentleTripleGrabber.class);
 			
 			// ConedaKor configuration
 			File endpointProperties = new File(configDir, "endpoint.properties");
@@ -69,8 +69,8 @@ public class Application {
 			
 			String extendedRelsXml = DateFormatUtils.format(new Date(), "dd-MM-yyyy") + "_extended_relationships.xml";
 			
-			if(LOG.isInfoEnabled()) { 
-				LOG.info("Final export file " + extendedRelsXml + " will be saved to " + dataDirectory);
+			if(logger.isInfoEnabled()) { 
+				logger.info("Final export file " + extendedRelsXml + " will be saved to " + dataDirectory);
 			}
 			
 			GentleTripleGrabber gentleTripleGrabber = new GentleTripleGrabber(dataDirectory);
@@ -84,13 +84,13 @@ public class Application {
 			gentleDataExtractor.extractData();
 
 		} catch (JAXBException e) {
-			LOG.error(e.toString());
+			logger.error(e.toString());
 		} catch (NoSuchEndpointException e) {
-			LOG.error(e.toString());
+			logger.error(e.toString());
 		} catch (ParseException e) {
-			LOG.error(e.toString());
+			logger.error(e.toString());
 		} catch (FileNotFoundException e) {
-			LOG.error(e.toString());
+			logger.error(e.toString());
 		} finally {
 			// Delete temporary created files on exit
 			File tmpEnt = new File(dataDirectory, Endpoint.ENTITIES.name());
