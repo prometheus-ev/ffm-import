@@ -17,6 +17,7 @@ import org.apache.commons.lang3.time.DateFormatUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import de.prometheus.bildarchiv.exception.HttpRequestException;
 import de.prometheus.bildarchiv.exception.NoSuchEndpointException;
 
 public class Application {
@@ -90,6 +91,8 @@ public class Application {
 		} catch (ParseException e) {
 			logger.error(e.toString());
 		} catch (FileNotFoundException e) {
+			logger.error(e.toString());
+		} catch (HttpRequestException e) {
 			logger.error(e.toString());
 		} finally {
 			// Delete temporary created files on exit

@@ -22,6 +22,7 @@ import org.apache.logging.log4j.Logger;
 import org.openarchives.beans.RecordType;
 import org.openarchives.beans.ResumptionTokenType;
 
+import de.prometheus.bildarchiv.exception.HttpRequestException;
 import de.prometheus.bildarchiv.exception.NoSuchEndpointException;
 
 public class GentleTripleGrabber {
@@ -34,7 +35,7 @@ public class GentleTripleGrabber {
 		this.dataDirectory = dataDirectory;
 	}
 
-	public void listRecords(Endpoint endpoint) throws NoSuchEndpointException {
+	public void listRecords(Endpoint endpoint) throws NoSuchEndpointException, HttpRequestException {
 
 		ExecutorService executor = Executors.newFixedThreadPool(1);
 		AtomicInteger index = new AtomicInteger();
@@ -101,7 +102,7 @@ public class GentleTripleGrabber {
 		}
 	}
 
-	private int getListSize(final String url) {
+	private int getListSize(final String url) throws HttpRequestException {
 		HttpURLConnection connection = GentleUtils.getConnectionFor(url);
 		return new OAIPMHtypeWrapper(GentleUtils.getElement(connection, url)).listSize();
 	}

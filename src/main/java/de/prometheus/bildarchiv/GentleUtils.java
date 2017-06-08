@@ -21,9 +21,11 @@ import org.apache.logging.log4j.Logger;
 import org.openarchives.beans.OAIPMHtype;
 import org.openarchives.beans.ObjectFactory;
 
+import de.prometheus.bildarchiv.exception.HttpRequestException;
+
 public final class GentleUtils {
 
-	private static final Logger LOG = LogManager.getLogger(GentleUtils.class);
+	private static Logger logger = LogManager.getLogger(GentleUtils.class);
 
 	private GentleUtils() {
 		// Static utility class
@@ -39,29 +41,44 @@ public final class GentleUtils {
 	 * @throws IOException
 	 */
 	public static JAXBElement<OAIPMHtype> getElement(HttpURLConnection connection, final String url) {
+		
 		HttpURLConnection httpConnection = connection;
+		
 		if(connection == null) {
-			if(LOG.isInfoEnabled()) { 
-				LOG.info("httpURLConnection is null... trying to reconnect to [" + url + "]");
+			
+			if(logger.isInfoEnabled()) { 
+				logger.info("httpURLConnection is null... trying to reconnect to [" + url + "]");
 			}
+			
 			if (url != null) {
-				httpConnection = getConnectionFor(url);
+				try {
+					httpConnection = getConnectionFor(url);
+				} catch (HttpRequestException e) {
+					logger.error(e.toString());
+				}
 			} 
+			
 		}
+		
 		return getlement(httpConnection);
 	}
 
 	private static JAXBElement<OAIPMHtype> getlement(HttpURLConnection connection) {
+		
 		try (InputStream inputStream = connection.getInputStream()){
+			
 			JAXBContext jaxbContext = JAXBContext.newInstance(OAIPMHtype.class, ObjectFactory.class);
 			Unmarshaller jaxbUnmarshaller = jaxbContext.createUnmarshaller();
 			StreamSource streamSource = new StreamSource(new BufferedInputStream(inputStream));
+			
 			return jaxbUnmarshaller.unmarshal(streamSource, OAIPMHtype.class);
+			
 		} catch (IOException e) {
-			LOG.error(e.getLocalizedMessage());
+			logger.error(e.toString());
 		} catch (JAXBException e) {
-			LOG.error(e.getLocalizedMessage());
+			logger.error(e.toString());
 		}
+		
 		return null;
 	}
 
@@ -71,23 +88,34 @@ public final class GentleUtils {
 	 * @param url
 	 *            {@link String}
 	 * @return {@link HttpURLConnection}
+	 * @throws HttpRequestException 
 	 * @throws IOException
 	 */
-	public static HttpURLConnection getConnectionFor(final String url) {
+	public static HttpURLConnection getConnectionFor(final String url) throws HttpRequestException {
+		
 		try {
+			
 			HttpURLConnection connection = (HttpURLConnection) new URL(url).openConnection();
 			connection.setRequestMethod("GET");
 			connection.setConnectTimeout(10000);
 			connection.setReadTimeout(10000);
 			connection.connect();
+			
 			int code = connection.getResponseCode();
-			if (code == 200)
+			
+			if (code == 200) {
 				return connection;
+			} else {
+				throw new HttpRequestException("ResponseCode " + code);
+			}
+				
+			
 		} catch (IOException e) {
 			// interrupt progress bar...
 			ProgressBar.error();
-			LOG.error(e.getMessage());
+			logger.error(e.toString());
 		}
+		
 		return null;
 	}
 	
@@ -97,13 +125,18 @@ public final class GentleUtils {
 	 * @return
 	 */
 	public static Properties getProperties(final File propertiesFile) {
+		
 		try (BufferedReader reader = new BufferedReader(new FileReader(propertiesFile))) {
+			
 			Properties properties = new Properties();
 			properties.load(reader);
+			
 			return properties;
+			
 		} catch (Exception e) {
-			LOG.error("Unable to load " + propertiesFile, e.getLocalizedMessage());
+			logger.error("Unable to load " + propertiesFile, e.toString());
 		}
+		
 		return null;
 	}
 	
