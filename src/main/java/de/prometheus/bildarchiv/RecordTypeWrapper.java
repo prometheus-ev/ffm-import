@@ -1,7 +1,5 @@
 package de.prometheus.bildarchiv;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Set;
 
 import org.openarchives.beans.Entity;
@@ -11,33 +9,41 @@ import org.openarchives.beans.Relationship;
 public class RecordTypeWrapper {
 	
 	private Set<RecordType> records;
-
+	private Set<Entity> entities;
+	private Set<Relationship> relationships;
+	
+	@SuppressWarnings("unchecked")
 	public RecordTypeWrapper(Set<RecordType> records) {
-		this.records = records;
-	}
-	
-	public List<Entity> getEntities() {
-		List<Entity> toReturn = new ArrayList<>();
-		for (RecordType recordType : records) {
-			if (valid(recordType)) {
-				toReturn.add(recordType.getMetadata().getEntity());
+		
+		if(!records.isEmpty()) {
+			
+			if (((Object) records.iterator().next()) instanceof Entity) {
+				
+				entities = (Set<Entity>) (Set<?>) records;
+			
+			} else if(((Object) records.iterator().next()) instanceof Relationship) {
+			
+				relationships = (Set<Relationship>) (Set<?>) records;
+			
+			} else {
+			
+				this.records = records;
+		
 			}
 		}
-		return toReturn;
+
+	}
+	
+	public Set<Entity> getEntities() {
+		return entities;
 	}
 
-	public List<Relationship> getRelationships() {
-		List<Relationship> toReturn = new ArrayList<>();
-		for (RecordType recordType : records) {
-			if(valid(recordType)) {
-				toReturn.add(recordType.getMetadata().getRelationship());
-			}
-		}
-		return toReturn;
+	public Set<Relationship> getRelationships() {
+		return relationships;
 	}
 	
-	private boolean valid(RecordType recordType) {
-		return recordType != null && recordType.getHeader() != null && recordType.getMetadata() != null;
+	public Set<RecordType> getRecords() {
+		return records;
 	}
 	
 }

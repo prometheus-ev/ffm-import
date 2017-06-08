@@ -2,7 +2,6 @@ package de.prometheus.bildarchiv;
 
 import java.io.File;
 import java.io.FileNotFoundException;
-import java.util.Date;
 import java.util.Properties;
 
 import javax.xml.bind.JAXBException;
@@ -13,7 +12,6 @@ import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
-import org.apache.commons.lang3.time.DateFormatUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -68,17 +66,11 @@ public class Application {
 				dataDirectory =  cmd.getOptionValue("d");
 			}
 			
-			String extendedRelsXml = DateFormatUtils.format(new Date(), "dd-MM-yyyy") + "_extended_relationships.xml";
-			
-			if(logger.isInfoEnabled()) { 
-				logger.info("Final export file " + extendedRelsXml + " will be saved to " + dataDirectory);
-			}
-			
 			GentleTripleGrabber gentleTripleGrabber = new GentleTripleGrabber(dataDirectory);
 			gentleTripleGrabber.listRecords(Endpoint.ENTITIES);
 			gentleTripleGrabber.listRecords(Endpoint.RELATIONSHIPS);
 
-			GentleSegmentMerger gentleSegmentMerger = new GentleSegmentMerger(dataDirectory, extendedRelsXml);
+			GentleSegmentMerger gentleSegmentMerger = new GentleSegmentMerger(dataDirectory);
 			File extendedRelsFile = gentleSegmentMerger.mergeEntitiesAndRelationships();
 
 			GentleDataExtractor gentleDataExtractor = new GentleDataExtractor(extendedRelsFile);

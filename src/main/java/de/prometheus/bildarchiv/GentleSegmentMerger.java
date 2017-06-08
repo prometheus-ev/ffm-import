@@ -9,8 +9,10 @@ import java.io.ObjectInputStream;
 import java.net.HttpURLConnection;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
@@ -25,6 +27,7 @@ import javax.xml.bind.Marshaller;
 import javax.xml.bind.PropertyException;
 import javax.xml.namespace.QName;
 
+import org.apache.commons.lang3.time.DateFormatUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.openarchives.beans.Entity;
@@ -40,11 +43,27 @@ public class GentleSegmentMerger {
 	private final String extendedRelsXml;
 	private final String dataDirectory;
 
-	public GentleSegmentMerger(final String dataDirectory, final String extendedRelsXml) {
+	public GentleSegmentMerger(final String dataDirectory) {
 		
 		this.dataDirectory = dataDirectory;
-		this.extendedRelsXml = extendedRelsXml;
+		this.extendedRelsXml = DateFormatUtils.format(new Date(), "dd-MM-yyyy") + "_extended_relationships.xml";;
 	
+	}
+	
+	public static void main(String[] args) throws PropertyException, FileNotFoundException, JAXBException {
+		
+		File log4jXml = new File("conf/", "log4j2.xml");
+		System.setProperty("log4j.configurationFile", log4jXml.getAbsolutePath());
+		
+		File endpointProperties = new File("conf/", "endpoint.properties");
+		Properties properties = GentleUtils.getProperties(endpointProperties);
+		System.setProperty("apiKey", properties.getProperty("apiKey"));
+		System.setProperty("baseUrl", properties.getProperty("baseUrl"));
+		
+		GentleSegmentMerger merger = new GentleSegmentMerger("/Users/matana/Documents/mars/workspace/ffm-import");
+		File extendedXml = merger.mergeEntitiesAndRelationships();
+		System.out.println(extendedXml.getAbsolutePath());
+		
 	}
 
 	public File mergeEntitiesAndRelationships() throws PropertyException, JAXBException, FileNotFoundException {
@@ -52,14 +71,22 @@ public class GentleSegmentMerger {
 		long time = System.currentTimeMillis();
 
 		if (logger.isInfoEnabled()) {
-			logger.info("Unmarshalling 'relationships' and 'entities' ...");
+			logger.info("Merging endpoints 'relationships' and 'entities' ...");
+		}
+		
+		RecordTypeWrapper entityRecords = new RecordTypeWrapper(getRecords(new File(dataDirectory, "ENTITIES/")));
+		Set<Entity> entities = entityRecords.getEntities();
+		
+		if (logger.isInfoEnabled()) {
+			logger.info("... counting " + entities.size() + " entities");
 		}
 		
 		RecordTypeWrapper relRecords = new RecordTypeWrapper(getRecords(new File(dataDirectory, "RELATIONSHIPS/")));
-		List<Relationship> relationships = relRecords.getRelationships();
-
-		RecordTypeWrapper entityRecords = new RecordTypeWrapper(getRecords(new File(dataDirectory, "ENTITIES/")));
-		List<Entity> entities = entityRecords.getEntities();
+		Set<Relationship> relationships = relRecords.getRelationships();
+		
+		if (logger.isInfoEnabled()) {
+			logger.info("... counting " + relationships.size() + " relationships");
+		}
 
 		List<Entity> sortedEntities = new ArrayList<>(entities);
 		Collections.sort(sortedEntities);
@@ -97,10 +124,10 @@ public class GentleSegmentMerger {
 		File extendedRelsXmlFile = new File(dataDirectory, extendedRelsXml);
 
 		if (logger.isInfoEnabled()) {
-			logger.info("Creating export file " + extendedRelsXmlFile.getAbsolutePath());
+			logger.info("Creating extended xml file " + extendedRelsXmlFile.getAbsolutePath());
 		}
 
-		exportXml(extendedRelsSet, new File(dataDirectory, extendedRelsXml));
+		toXml(extendedRelsSet, new File(dataDirectory, extendedRelsXml));
 
 		if (logger.isInfoEnabled()) {
 			long duration = System.currentTimeMillis() - time;
@@ -127,7 +154,9 @@ public class GentleSegmentMerger {
 	private Set<RecordType> readObject(File file) {
 		
 		try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream(file))) {
+			
 			return (Set<RecordType>) ois.readObject();
+		
 		} catch (IOException e) {
 			logger.error(e.toString());
 		} catch (ClassNotFoundException e) {
@@ -137,7 +166,7 @@ public class GentleSegmentMerger {
 		return null;
 	}
 
-	private void exportXml(Set<ExtendedRelationship> toXml, File file) throws JAXBException, PropertyException {
+	private void toXml(Set<ExtendedRelationship> toXml, File file) throws JAXBException, PropertyException {
 		
 		Prometheus prom = new Prometheus();
 		prom.setRelationships(toXml);
@@ -160,7 +189,7 @@ public class GentleSegmentMerger {
 		try {
 			
 			if (logger.isInfoEnabled()) {
-				logger.info("Retrieving missing " + notRetrieved.size() + "entities... this might take a moment.");
+				logger.info("Retrieving missing " + notRetrieved.size() + " entities... this might take a moment.");
 			}
 
 			List<Entity> missing = new ArrayList<>(submit.get());
@@ -221,15 +250,19 @@ public class GentleSegmentMerger {
 			
 			Set<Entity> toReturn = new HashSet<>();
 			
+			ProgressBar progress = new ProgressBar(entities.size());
+			progress.start();
+			
 			for (String id : entities) {
 				
 				String url = Endpoint.ENTITIES.getRecord(id);
 				HttpURLConnection c = GentleUtils.getConnectionFor(url);
-				OAIPMHtypeWrapper oaiWrapper = new OAIPMHtypeWrapper(GentleUtils.getElement(c, null));
+				OAIPMHtypeWrapper oaiWrapper = new OAIPMHtypeWrapper(GentleUtils.getElement(c, url));
 				
 				if (oaiWrapper.validEntity()) {
 					Entity entity = oaiWrapper.getEntity();
 					toReturn.add(entity);
+					progress.increment(1);
 				}
 
 				try {
@@ -238,6 +271,8 @@ public class GentleSegmentMerger {
 					logger.error(e.toString());
 				}
 			}
+			
+			progress.done();
 
 			return toReturn;
 		}
