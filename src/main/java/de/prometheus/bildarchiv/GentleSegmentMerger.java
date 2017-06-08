@@ -29,19 +29,16 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.openarchives.beans.Entity;
 import org.openarchives.beans.ExtendedRelationship;
-import org.openarchives.beans.OAIPMHtype;
 import org.openarchives.beans.Prometheus;
 import org.openarchives.beans.RecordType;
 import org.openarchives.beans.Relationship;
 
 public class GentleSegmentMerger {
 
-	private static final Logger LOG = LogManager.getLogger(GentleSegmentMerger.class);
+	private Logger logger = LogManager.getLogger(GentleSegmentMerger.class);
 
 	private final String extendedRelsXml;
 	private final String dataDirectory;
-	private List<Relationship> relationshipsList;
-	private List<Entity> entitiesList;
 
 	public GentleSegmentMerger(final String dataDirectory, final String extendedRelsXml) {
 		this.dataDirectory = dataDirectory;
@@ -52,22 +49,23 @@ public class GentleSegmentMerger {
 
 		long time = System.currentTimeMillis();
 
-		if (LOG.isInfoEnabled()) {
-			LOG.info("Unmarshalling 'relationships' and 'entities' ...");
+		if (logger.isInfoEnabled()) {
+			logger.info("Unmarshalling 'relationships' and 'entities' ...");
 		}
+		
+		RecordTypeWrapper relRecords = new RecordTypeWrapper(getRecords(new File(dataDirectory, "RELATIONSHIPS/")));
+		List<Relationship> relationships = relRecords.getRelationships();
 
-		Set<RecordType> relationships = getRecords(new File(dataDirectory, "RELATIONSHIPS/"));
-		getRelationships(relationships);
+		RecordTypeWrapper entityRecords = new RecordTypeWrapper(getRecords(new File(dataDirectory, "ENTITIES/")));
+		List<Entity> entities = entityRecords.getEntities();
 
-		Set<RecordType> entities = getRecords(new File(dataDirectory, "ENTITIES/"));
-		getEntities(entities);
-
-		List<Entity> sortedEntities = new ArrayList<>(entitiesList);
+		List<Entity> sortedEntities = new ArrayList<>(entities);
 		Collections.sort(sortedEntities);
+		
 		Set<String> notRetrieved = new HashSet<>();
 		Set<ExtendedRelationship> extendedRelsSet = new HashSet<>();
 
-		for (Relationship relationship : relationshipsList) {
+		for (Relationship relationship : relationships) {
 			ExtendedRelationship extendedRelationship = new ExtendedRelationship(relationship);
 
 			Entity fromEntity = find(relationship.getFrom(), sortedEntities);
@@ -94,41 +92,19 @@ public class GentleSegmentMerger {
 
 		File extendedRelsXmlFile = new File(dataDirectory, extendedRelsXml);
 
-		if (LOG.isInfoEnabled()) {
-			LOG.info("Creating export file " + extendedRelsXmlFile.getAbsolutePath());
+		if (logger.isInfoEnabled()) {
+			logger.info("Creating export file " + extendedRelsXmlFile.getAbsolutePath());
 		}
 
 		exportXml(extendedRelsSet, new File(dataDirectory, extendedRelsXml));
 
-		if (LOG.isInfoEnabled()) {
+		if (logger.isInfoEnabled()) {
 			long duration = System.currentTimeMillis() - time;
-			LOG.info("Done! ...took " + ((duration / 1000) / 60) + " min");
+			logger.info("Done! ...took " + ((duration / 1000) / 60) + " min");
 		}
 
 		return extendedRelsXmlFile;
 
-	}
-
-	private void getEntities(Set<RecordType> entities) {
-		entitiesList = new ArrayList<>();
-		for (RecordType recordType : entities) {
-			if (valid(recordType)) {
-				entitiesList.add(recordType.getMetadata().getEntity());
-			}
-		}
-	}
-
-	private void getRelationships(Set<RecordType> relationships) {
-		relationshipsList = new ArrayList<>();
-		for (RecordType recordType : relationships) {
-			if (valid(recordType)) {
-				relationshipsList.add(recordType.getMetadata().getRelationship());
-			}
-		}
-	}
-
-	private boolean valid(RecordType recordType) {
-		return recordType != null && recordType.getHeader() != null && recordType.getMetadata() != null;
 	}
 
 	private Set<RecordType> getRecords(final File dir) throws FileNotFoundException {
@@ -145,9 +121,9 @@ public class GentleSegmentMerger {
 		try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream(file))) {
 			return (Set<RecordType>) ois.readObject();
 		} catch (IOException e) {
-			LOG.error(e.toString());
+			logger.error(e.toString());
 		} catch (ClassNotFoundException e) {
-			LOG.error(e.toString());
+			logger.error(e.toString());
 		}
 		return null;
 	}
@@ -171,8 +147,8 @@ public class GentleSegmentMerger {
 		Future<Set<Entity>> submit = executor.submit(new RequestCallable(notRetrieved));
 
 		try {
-			if (LOG.isInfoEnabled()) {
-				LOG.info("Retrieving missing " + notRetrieved.size() + "entities... this might take a moment.");
+			if (logger.isInfoEnabled()) {
+				logger.info("Retrieving missing " + notRetrieved.size() + "entities... this might take a moment.");
 			}
 
 			List<Entity> missing = new ArrayList<>(submit.get());
@@ -187,7 +163,7 @@ public class GentleSegmentMerger {
 			}
 
 		} catch (InterruptedException | ExecutionException e) {
-			LOG.error(e.toString());
+			logger.error(e.toString());
 		}
 		executor.shutdown();
 	}
@@ -229,29 +205,23 @@ public class GentleSegmentMerger {
 				
 				String url = Endpoint.ENTITIES.getRecord(id);
 				HttpURLConnection c = GentleUtils.getConnectionFor(url);
-				JAXBElement<OAIPMHtype> oai = GentleUtils.getElement(c, null);
+				OAIPMHtypeWrapper oaiWrapper = new OAIPMHtypeWrapper(GentleUtils.getElement(c, null));
 				
-				if (valid(oai)) {
-					Entity entity = oai.getValue().getGetRecord().getRecord().getMetadata().getEntity();
+				if (oaiWrapper.validEntity()) {
+					Entity entity = oaiWrapper.getEntity();
 					toReturn.add(entity);
 				}
 
 				try {
-					Thread.sleep(200);
+					Thread.sleep(200); // and again... some nice gentleness to the stressed server :-D
 				} catch (InterruptedException e) {
-					LOG.error(e.toString());
+					logger.error(e.toString());
 				}
 			}
 
 			return toReturn;
 		}
 
-		private boolean valid(JAXBElement<OAIPMHtype> oai) {
-			return oai != null && oai.getValue() != null && oai.getValue().getGetRecord() != null
-					&& oai.getValue().getGetRecord().getRecord() != null
-					&& oai.getValue().getGetRecord().getRecord().getMetadata() != null
-					&& oai.getValue().getGetRecord().getRecord().getMetadata().getEntity() != null;
-		}
 	}
 
 }
