@@ -24,12 +24,11 @@ public enum Endpoint {
 		return baseUrl + endpoint + getRecord + identifier + prefix + apiKey;
 	}
 
-	public String listRecords() {
-		return baseUrl + endpoint + listRecords + prefix + apiKey;
-	}
-
 	public String listRecords(final String token) {
-		return baseUrl + endpoint + listRecords + prefix + apiKey + resumptionToken + token;
+		if (token == null)
+			return baseUrl + endpoint + listRecords + prefix + apiKey;
+		else
+			return baseUrl + endpoint + listRecords + prefix + apiKey + resumptionToken + token;
 	}
 
 	public String listIdentifiers() {
