@@ -9,7 +9,6 @@ import java.io.ObjectInputStream;
 import java.net.HttpURLConnection;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Properties;
@@ -20,33 +19,31 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
-import javax.xml.bind.JAXBContext;
-import javax.xml.bind.JAXBElement;
 import javax.xml.bind.JAXBException;
-import javax.xml.bind.Marshaller;
 import javax.xml.bind.PropertyException;
-import javax.xml.namespace.QName;
 
-import org.apache.commons.lang3.time.DateFormatUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.openarchives.beans.Entity;
-import org.openarchives.beans.ExtendedRelationship;
-import org.openarchives.beans.Prometheus;
-import org.openarchives.beans.RecordType;
-import org.openarchives.beans.Relationship;
+import org.openarchives.model.Entity;
+import org.openarchives.model.RecordType;
+import org.openarchives.model.Relationship;
+
+import de.prometheus.bildarchiv.model.ExtendedRelationship;
+import de.prometheus.bildarchiv.model.OAIPMHtypeWrapper;
+import de.prometheus.bildarchiv.model.RecordTypeWrapper;
+import de.prometheus.bildarchiv.util.Endpoint;
+import de.prometheus.bildarchiv.util.GentleUtils;
+import de.prometheus.bildarchiv.util.ProgressBar;
 
 public class GentleSegmentMerger {
 
 	private Logger logger = LogManager.getLogger(GentleSegmentMerger.class);
 
-	private final String extendedRelsXml;
 	private final String dataDirectory;
 
 	public GentleSegmentMerger(final String dataDirectory) {
 		
 		this.dataDirectory = dataDirectory;
-		this.extendedRelsXml = DateFormatUtils.format(new Date(), "dd-MM-yyyy") + "_extended_relationships.xml";;
 	
 	}
 	
@@ -61,12 +58,10 @@ public class GentleSegmentMerger {
 		System.setProperty("baseUrl", properties.getProperty("baseUrl"));
 		
 		GentleSegmentMerger merger = new GentleSegmentMerger("/Users/matana/Documents/mars/workspace/ffm-import");
-		File extendedXml = merger.mergeEntitiesAndRelationships();
-		System.out.println(extendedXml.getAbsolutePath());
-		
+		merger.mergeEntitiesAndRelationships();
 	}
 
-	public File mergeEntitiesAndRelationships() throws PropertyException, JAXBException, FileNotFoundException {
+	public Set<ExtendedRelationship> mergeEntitiesAndRelationships() throws PropertyException, JAXBException, FileNotFoundException {
 
 		long time = System.currentTimeMillis();
 
@@ -92,15 +87,15 @@ public class GentleSegmentMerger {
 		Collections.sort(sortedEntities);
 		
 		Set<String> notRetrieved = new HashSet<>();
-		Set<ExtendedRelationship> extendedRelsSet = new HashSet<>();
+		Set<ExtendedRelationship> xtendedRelationships = new HashSet<>();
 
 		for (Relationship relationship : relationships) {
 			
-			ExtendedRelationship extendedRelationship = new ExtendedRelationship(relationship);
+			ExtendedRelationship xtendedRelationship = new ExtendedRelationship(relationship);
 
 			Entity fromEntity = find(relationship.getFrom(), sortedEntities);
 			if (fromEntity != null) {
-				extendedRelationship.setFrom(fromEntity);
+				xtendedRelationship.setFrom(fromEntity);
 			} else {
 				notRetrieved.add(relationship.getFrom());
 			}
@@ -108,39 +103,33 @@ public class GentleSegmentMerger {
 			Entity toEntity = find(relationship.getTo(), sortedEntities);
 			
 			if (toEntity != null) {
-				extendedRelationship.setTo(toEntity);
+				xtendedRelationship.setTo(toEntity);
 			} else {
 				notRetrieved.add(relationship.getTo());
 			}
 
-			extendedRelsSet.add(extendedRelationship);
+			xtendedRelationships.add(xtendedRelationship);
 
 		}
 
 		if (!notRetrieved.isEmpty()) {
-			getMissingRecords(notRetrieved, extendedRelsSet);
+			getMissingRecords(notRetrieved, xtendedRelationships);
 		}
 
-		File extendedRelsXmlFile = new File(dataDirectory, extendedRelsXml);
-
-		if (logger.isInfoEnabled()) {
-			logger.info("Creating extended xml file " + extendedRelsXmlFile.getAbsolutePath());
-		}
-
-		toXml(extendedRelsSet, new File(dataDirectory, extendedRelsXml));
+		GentleUtils.toXml(xtendedRelationships, new File(dataDirectory));
 
 		if (logger.isInfoEnabled()) {
 			long duration = System.currentTimeMillis() - time;
 			logger.info("Done! ...took " + ((duration / 1000) / 60) + " min");
 		}
 
-		return extendedRelsXmlFile;
-
+		return xtendedRelationships;
+		
 	}
 
-	private Set<RecordType> getRecords(final File dir) throws FileNotFoundException {
+	private Set<RecordType> getRecords(final File directory) throws FileNotFoundException {
 		
-		File[] files = getFiles(dir, ".kor");
+		File[] files = getFiles(directory, ".kor");
 		Set<RecordType> records = new HashSet<>();
 		
 		for (File file : files) {
@@ -149,9 +138,25 @@ public class GentleSegmentMerger {
 		
 		return records;
 	}
+	
+	private File[] getFiles(final File directory, final String suffix) throws FileNotFoundException {
+		
+		if (!directory.exists()) {
+			throw new FileNotFoundException(directory.getAbsolutePath());
+		}
+		
+		File[] files = directory.listFiles(new FileFilter() {
+			@Override
+			public boolean accept(File pathname) {
+				return pathname.getName().endsWith(suffix);
+			}
+		});
+		
+		return files;
+	}
 
 	@SuppressWarnings("unchecked")
-	private Set<RecordType> readObject(File file) {
+	private Set<RecordType> readObject(final File file) {
 		
 		try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream(file))) {
 			
@@ -164,21 +169,6 @@ public class GentleSegmentMerger {
 		}
 		
 		return null;
-	}
-
-	private void toXml(Set<ExtendedRelationship> toXml, File file) throws JAXBException, PropertyException {
-		
-		Prometheus prom = new Prometheus();
-		prom.setRelationships(toXml);
-
-		JAXBContext jaxbContext = JAXBContext.newInstance(Prometheus.class);
-		JAXBElement<Prometheus> element = new JAXBElement<Prometheus>(
-				new QName("http://www.openarchives.org/OAI/2.0/", "ffm"), Prometheus.class, prom);
-
-		Marshaller marshaller = jaxbContext.createMarshaller();
-		marshaller.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, true);
-		marshaller.marshal(element, file);
-		
 	}
 
 	private void getMissingRecords(final Set<String> notRetrieved, Set<ExtendedRelationship> extendedRelsSet) {
@@ -210,31 +200,15 @@ public class GentleSegmentMerger {
 		executor.shutdown();
 	}
 
-	private static Entity find(final String id, List<Entity> orderedList) {
+	private static Entity find(final String identifier, List<Entity> orderedList) {
 		
-		int index = Collections.binarySearch(orderedList, new Entity(id));
+		int index = Collections.binarySearch(orderedList, new Entity(identifier));
 		
 		if (index >= 0) {
 			return orderedList.get(index);
 		}
 		
 		return null;
-	}
-
-	private File[] getFiles(File dir, final String suffix) throws FileNotFoundException {
-		
-		if (!dir.exists()) {
-			throw new FileNotFoundException(dir.getAbsolutePath());
-		}
-		
-		File[] files = dir.listFiles(new FileFilter() {
-			@Override
-			public boolean accept(File pathname) {
-				return pathname.getName().endsWith(suffix);
-			}
-		});
-		
-		return files;
 	}
 
 	class RequestCallable implements Callable<Set<Entity>> {
@@ -256,8 +230,8 @@ public class GentleSegmentMerger {
 			for (String id : entities) {
 				
 				String url = Endpoint.ENTITIES.getRecord(id);
-				HttpURLConnection c = GentleUtils.getConnectionFor(url);
-				OAIPMHtypeWrapper oaiWrapper = new OAIPMHtypeWrapper(GentleUtils.getElement(c, url));
+				HttpURLConnection c = GentleUtils.getHttpURLConnection(url);
+				OAIPMHtypeWrapper oaiWrapper = new OAIPMHtypeWrapper(GentleUtils.unmarshalOAIPMHtype(c, url));
 				
 				if (oaiWrapper.validEntity()) {
 					Entity entity = oaiWrapper.getEntity();

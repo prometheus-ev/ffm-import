@@ -1,55 +1,44 @@
 package de.prometheus.bildarchiv;
 
-import java.io.BufferedInputStream;
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.ExecutionException;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-import javax.xml.bind.JAXBContext;
-import javax.xml.bind.JAXBElement;
 import javax.xml.bind.JAXBException;
-import javax.xml.bind.Marshaller;
-import javax.xml.bind.PropertyException;
-import javax.xml.bind.Unmarshaller;
-import javax.xml.namespace.QName;
-import javax.xml.transform.stream.StreamSource;
 
-import org.apache.commons.lang3.time.DateFormatUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.openarchives.beans.Entity;
-import org.openarchives.beans.ExtendedRelationship;
-import org.openarchives.beans.Prometheus;
+import org.openarchives.model.Entity;
 
-import de.prometheus.bildarchiv.beans.Exhibition;
-import de.prometheus.bildarchiv.beans.Institution;
-import de.prometheus.bildarchiv.beans.Literature;
-import de.prometheus.bildarchiv.beans.Medium;
-import de.prometheus.bildarchiv.beans.Part;
-import de.prometheus.bildarchiv.beans.Person;
-import de.prometheus.bildarchiv.beans.Place;
-import de.prometheus.bildarchiv.beans.PrometheusImport;
-import de.prometheus.bildarchiv.beans.Work;
+import de.prometheus.bildarchiv.model.Exhibition;
+import de.prometheus.bildarchiv.model.ExtendedRelationship;
+import de.prometheus.bildarchiv.model.Institution;
+import de.prometheus.bildarchiv.model.Literature;
+import de.prometheus.bildarchiv.model.Medium;
+import de.prometheus.bildarchiv.model.Part;
+import de.prometheus.bildarchiv.model.Person;
+import de.prometheus.bildarchiv.model.Place;
+import de.prometheus.bildarchiv.model.Work;
+import de.prometheus.bildarchiv.util.GentleUtils;
+import de.prometheus.bildarchiv.util.Relations;
 
 /**
- * This marvelous class is used to extract the information described in
- * <a href="https://github.com/matana/ffm-import/blob/master/20170511_154237.jpg">the truth</a>
+ * This marvelous class is used to extract the information described in <a href=
+ * "https://github.com/matana/ffm-import/blob/master/20170511_154237.jpg">the
+ * truth</a>
+ * 
  * @author matana
  *
  */
 public class GentleDataExtractor {
 
-	private static final Logger LOG = LogManager.getLogger(GentleDataExtractor.class);
+	private Logger logger = LogManager.getLogger(GentleDataExtractor.class);
 
-	private final File extendedRelsFile;
+	private File extendedRelsFile;
 
 	private transient Set<ExtendedRelationship> befindetSichIn;
 	private transient Set<ExtendedRelationship> hatGeschaffen;
@@ -75,52 +64,66 @@ public class GentleDataExtractor {
 	private transient Set<ExtendedRelationship> auftraggeberVonWerk;
 	private transient Set<ExtendedRelationship> ausstellungskatalogZu;
 
-	public GentleDataExtractor(final File extendedRelsFile) {
+	public GentleDataExtractor(Set<ExtendedRelationship> relationships) {
+		
+		init(relationships);
+	
+	}
 
-		this.extendedRelsFile = extendedRelsFile;
-
-		try {
-
-			LOG.info("init-method called... filtering relationships from endpoint \"relation\" ");
-
-			final Set<ExtendedRelationship> relationships = getRelationships(extendedRelsFile);
-
-			this.befindetSichIn = filterRelationships(relationships, Relations.BEFINDET_SICH_IN);
-			this.hatGeschaffen = filterRelationships(relationships, Relations.HAT_GESCHAFFEN);
-			this.basisdatenZumWerkAus = filterRelationships(relationships, Relations.BASISDATEN_ZUM_WERK_AUS);
-			this.literaturEnthaeltBilddatei = filterRelationships(relationships, Relations.LITERATUR_ENTHAELT_BILDDATEI);
-			this.geburtsortVon = filterRelationships(relationships, Relations.GEBURTSORT_VON);
-			this.sterbeOrt = filterRelationships(relationships, Relations.STERBE_ORT);
-			this.institutionInOrt = filterRelationships(relationships, Relations.INSTITUTION_IN_ORT);
-			this.verwertungsrechtAmFoto = filterRelationships(relationships, Relations.VERWERTUNGSRECHT_AM_FOTO);
-			this.stehtInVerbindungZu = filterRelationships(relationships, Relations.STEHT_IN_VERBINDUNG_ZU);
-			this.stelltDar = filterRelationships(relationships, Relations.STELLT_DAR);
-			this.fotografiertVon = filterRelationships(relationships, Relations.FOTOGRAFIERT_VON);
-			this.ausgestellteWerke = filterRelationships(relationships, Relations.AUSGESTELLTE_WERKE);
-			this.kuratiertVon = filterRelationships(relationships, Relations.KURATIERT_VON);
-			this.wurdeGezeigtIn = filterRelationships(relationships, Relations.WURDE_GEZEIGT_IN);
-			this.autorInVon = filterRelationships(relationships, Relations.AUTORIN_VON);
-			this.herausgeberInVon = filterRelationships(relationships, Relations.HERAUSGEBERIN_VON);
-			this.erschienenIn = filterRelationships(relationships, Relations.ERSCHIENEN_IN);
-			this.sammlungskatalog = filterRelationships(relationships, Relations.SAMMLUNGSKATALOG);
-			this.bilddateiZuWerk = filterRelationships(relationships, Relations.BILDDATEI_ZU_WERK);
-			this.istTeilVon = filterRelationships(relationships, Relations.IST_TEIL_VON);
-			this.schuelerInVon = filterRelationships(relationships, Relations.SCHUELERIN_VON);
-			this.auftraggeberVonWerk = filterRelationships(relationships, Relations.AUFTRAGGEBER_VON_WERK);
-			this.ausstellungskatalogZu = filterRelationships(relationships, Relations.AUSSTELLUNGSKATALOG_ZU);
-
-			LOG.info("init-procedure done!");
-
-		} catch (FileNotFoundException e) {
-			LOG.error(e.getLocalizedMessage());
-		} catch (InterruptedException e) {
-			LOG.error(e.getLocalizedMessage());
-		} catch (ExecutionException e) {
-			LOG.error(e.getLocalizedMessage());
-		} catch (JAXBException e) {
-			LOG.error(e.getLocalizedMessage());
+	private void init(Set<ExtendedRelationship> relationships) {
+		
+		this.bilddateiZuWerk = filterRelationships(relationships, Relations.BILDDATEI_ZU_WERK);
+		this.befindetSichIn = filterRelationships(relationships, Relations.BEFINDET_SICH_IN);
+		this.hatGeschaffen = filterRelationships(relationships, Relations.HAT_GESCHAFFEN);
+		this.basisdatenZumWerkAus = filterRelationships(relationships, Relations.BASISDATEN_ZUM_WERK_AUS);
+		this.literaturEnthaeltBilddatei = filterRelationships(relationships, Relations.LITERATUR_ENTHAELT_BILDDATEI);
+		this.geburtsortVon = filterRelationships(relationships, Relations.GEBURTSORT_VON);
+		this.sterbeOrt = filterRelationships(relationships, Relations.STERBE_ORT);
+		this.institutionInOrt = filterRelationships(relationships, Relations.INSTITUTION_IN_ORT);
+		this.verwertungsrechtAmFoto = filterRelationships(relationships, Relations.VERWERTUNGSRECHT_AM_FOTO);
+		this.stehtInVerbindungZu = filterRelationships(relationships, Relations.STEHT_IN_VERBINDUNG_ZU);
+		this.stelltDar = filterRelationships(relationships, Relations.STELLT_DAR);
+		this.fotografiertVon = filterRelationships(relationships, Relations.FOTOGRAFIERT_VON);
+		this.ausgestellteWerke = filterRelationships(relationships, Relations.AUSGESTELLTE_WERKE);
+		this.kuratiertVon = filterRelationships(relationships, Relations.KURATIERT_VON);
+		this.wurdeGezeigtIn = filterRelationships(relationships, Relations.WURDE_GEZEIGT_IN);
+		this.autorInVon = filterRelationships(relationships, Relations.AUTORIN_VON);
+		this.herausgeberInVon = filterRelationships(relationships, Relations.HERAUSGEBERIN_VON);
+		this.erschienenIn = filterRelationships(relationships, Relations.ERSCHIENEN_IN);
+		this.sammlungskatalog = filterRelationships(relationships, Relations.SAMMLUNGSKATALOG);
+		this.istTeilVon = filterRelationships(relationships, Relations.IST_TEIL_VON);
+		this.schuelerInVon = filterRelationships(relationships, Relations.SCHUELERIN_VON);
+		this.auftraggeberVonWerk = filterRelationships(relationships, Relations.AUFTRAGGEBER_VON_WERK);
+		this.ausstellungskatalogZu = filterRelationships(relationships, Relations.AUSSTELLUNGSKATALOG_ZU);
+		
+		if (logger.isInfoEnabled()) {
+			
+			logger.info("bilddateiZuWerk :: " + bilddateiZuWerk.size());
+			logger.info("Filtering relationships done!");
+			logger.info("befindetSichIn :: " + befindetSichIn.size());
+			logger.info("hatGeschaffen :: " + hatGeschaffen.size());
+			logger.info("basisdatenZumWerkAus :: " + basisdatenZumWerkAus.size());
+			logger.info("literaturEnthaeltBilddatei :: " + literaturEnthaeltBilddatei.size());
+			logger.info("geburtsortVon :: " + geburtsortVon.size());
+			logger.info("sterbeOrt :: " + sterbeOrt.size());
+			logger.info("institutionInOrt :: " + institutionInOrt.size());
+			logger.info("verwertungsrechtAmFoto :: " + verwertungsrechtAmFoto.size());
+			logger.info("stehtInVerbindungZu :: " + stehtInVerbindungZu.size());
+			logger.info("stelltDar :: " + stelltDar.size());
+			logger.info("fotografiertVon :: " + fotografiertVon.size());
+			logger.info("ausgestellteWerke :: " + ausgestellteWerke.size());
+			logger.info("kuratiertVon :: " + kuratiertVon.size());
+			logger.info("wurdeGezeigtIn :: " + wurdeGezeigtIn.size());
+			logger.info("autorInVon :: " + autorInVon.size());
+			logger.info("herausgeberInVon :: " + herausgeberInVon.size());
+			logger.info("erschienenIn :: " + erschienenIn.size());
+			logger.info("sammlungskatalog :: " + sammlungskatalog.size());
+			logger.info("istTeilVon :: " + istTeilVon.size());
+			logger.info("schuelerInVon :: " + schuelerInVon.size());
+			logger.info("auftraggeberVonWerk :: " + auftraggeberVonWerk.size());
+			logger.info("ausstellungskatalogZu :: " + ausstellungskatalogZu.size());
+			
 		}
-
 	}
 
 	/**
@@ -208,14 +211,13 @@ public class GentleDataExtractor {
 			// collect work object
 			works.add(workObject);
 
-			if (LOG.isInfoEnabled()) {
-				LOG.info("added new work object '" + workObject.getTitle() + "' left "
-						+ (bilddateiZuWerk.size() - works.size()));
+			if (logger.isInfoEnabled()) {
+				logger.info("Added new work object '" + workObject.getTitle());
 			}
 
 		}
 
-		export(works);
+		GentleUtils.finalExport(works, extendedRelsFile.getParentFile());
 	}
 
 	private List<Person> getPortrayals(final List<ExtendedRelationship> relations) {
@@ -259,39 +261,6 @@ public class GentleDataExtractor {
 	private List<Person> getCreators(final Set<ExtendedRelationship> relations) {
 		return relations.stream().map(ExtendedRelationship::getFrom).map(c -> getPerson(c, 0))
 				.collect(Collectors.toList());
-	}
-
-	private void export(final Set<Work> works) throws JAXBException, PropertyException {
-		PrometheusImport imports = new PrometheusImport();
-		imports.setWorks(works);
-
-		if (LOG.isInfoEnabled()) {
-			LOG.info("creating file *_conedakor_dump.xml");
-		}
-
-		JAXBContext jaxbContext = JAXBContext.newInstance(PrometheusImport.class);
-		JAXBElement<PrometheusImport> element = new JAXBElement<PrometheusImport>(
-				new QName("http://www.prometheus-bildarchiv.de/", "conedaKorData"), PrometheusImport.class, imports);
-
-		Marshaller marshaller = jaxbContext.createMarshaller();
-		marshaller.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, true);
-		marshaller.marshal(element, new File(extendedRelsFile.getParent(),
-				DateFormatUtils.format(new Date(), "dd-MM-yyyy") + "_conedakor_dump.xml"));
-
-		if (LOG.isInfoEnabled()) {
-			LOG.info("data extraction finished!");
-		}
-	}
-
-	private Set<ExtendedRelationship> getRelationships(final File importFile)
-			throws InterruptedException, ExecutionException, FileNotFoundException, JAXBException {
-		JAXBContext jaxbContext = JAXBContext.newInstance(Prometheus.class);
-		Unmarshaller jaxbUnmarshaller = jaxbContext.createUnmarshaller();
-		StreamSource streamSource = new StreamSource(
-				new BufferedInputStream(new FileInputStream(new File(importFile.getAbsolutePath()))));
-		JAXBElement<Prometheus> prom = jaxbUnmarshaller.unmarshal(streamSource, Prometheus.class);
-		Prometheus prometheus = prom.getValue();
-		return prometheus.getRelations();
 	}
 
 	private List<ExtendedRelationship> filterList(final Set<ExtendedRelationship> relation,

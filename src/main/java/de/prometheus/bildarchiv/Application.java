@@ -3,6 +3,7 @@ package de.prometheus.bildarchiv;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.util.Properties;
+import java.util.Set;
 
 import javax.xml.bind.JAXBException;
 
@@ -17,6 +18,9 @@ import org.apache.logging.log4j.Logger;
 
 import de.prometheus.bildarchiv.exception.HttpRequestException;
 import de.prometheus.bildarchiv.exception.NoSuchEndpointException;
+import de.prometheus.bildarchiv.model.ExtendedRelationship;
+import de.prometheus.bildarchiv.util.Endpoint;
+import de.prometheus.bildarchiv.util.GentleUtils;
 
 public class Application {
 
@@ -71,9 +75,9 @@ public class Application {
 			gentleTripleGrabber.listRecords(Endpoint.RELATIONSHIPS);
 
 			GentleSegmentMerger gentleSegmentMerger = new GentleSegmentMerger(dataDirectory);
-			File extendedRelsFile = gentleSegmentMerger.mergeEntitiesAndRelationships();
+			Set<ExtendedRelationship> xtendedRelationships = gentleSegmentMerger.mergeEntitiesAndRelationships();
 
-			GentleDataExtractor gentleDataExtractor = new GentleDataExtractor(extendedRelsFile);
+			GentleDataExtractor gentleDataExtractor = new GentleDataExtractor(xtendedRelationships);
 			gentleDataExtractor.extractData();
 
 		} catch (JAXBException e) {
@@ -87,11 +91,13 @@ public class Application {
 		} catch (HttpRequestException e) {
 			logger.error(e.toString());
 		} finally {
+			
 			// Delete temporary created files on exit
 			File tmpEnt = new File(dataDirectory, Endpoint.ENTITIES.name());
 			File tmpRel = new File(dataDirectory, Endpoint.RELATIONSHIPS.name());
 			tmpEnt.deleteOnExit();
 			tmpRel.deleteOnExit();
+			
 		}
 	}
 

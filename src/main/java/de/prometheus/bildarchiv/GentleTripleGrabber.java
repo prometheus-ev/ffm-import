@@ -19,11 +19,15 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.openarchives.beans.RecordType;
-import org.openarchives.beans.ResumptionTokenType;
+import org.openarchives.model.RecordType;
+import org.openarchives.model.ResumptionTokenType;
 
 import de.prometheus.bildarchiv.exception.HttpRequestException;
 import de.prometheus.bildarchiv.exception.NoSuchEndpointException;
+import de.prometheus.bildarchiv.model.OAIPMHtypeWrapper;
+import de.prometheus.bildarchiv.util.Endpoint;
+import de.prometheus.bildarchiv.util.GentleUtils;
+import de.prometheus.bildarchiv.util.ProgressBar;
 
 public class GentleTripleGrabber {
 
@@ -60,8 +64,8 @@ public class GentleTripleGrabber {
 
 		do {
 
-			HttpURLConnection connection = GentleUtils.getConnectionFor(url);
-			OAIPMHtypeWrapper oaiWrapper = new OAIPMHtypeWrapper(GentleUtils.getElement(connection, url));
+			HttpURLConnection connection = GentleUtils.getHttpURLConnection(url);
+			OAIPMHtypeWrapper oaiWrapper = new OAIPMHtypeWrapper(GentleUtils.unmarshalOAIPMHtype(connection, url));
 
 			resumptionToken = oaiWrapper.getResumptionToken();
 			if (resumptionToken == null || resumptionToken.getValue() == null) {
@@ -103,8 +107,8 @@ public class GentleTripleGrabber {
 	}
 
 	private int getListSize(final String url) throws HttpRequestException {
-		HttpURLConnection connection = GentleUtils.getConnectionFor(url);
-		return new OAIPMHtypeWrapper(GentleUtils.getElement(connection, url)).listSize();
+		HttpURLConnection connection = GentleUtils.getHttpURLConnection(url);
+		return new OAIPMHtypeWrapper(GentleUtils.unmarshalOAIPMHtype(connection, url)).listSize();
 	}
 
 	private boolean nullOrEmptyRecords(List<RecordType> records) {
