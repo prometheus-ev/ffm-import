@@ -287,10 +287,6 @@ public class GentleDataExtractor {
 	private Exhibition getExhibition(final Entity entity) {
 
 		Exhibition exhibitionObject = new Exhibition(entity);
-		// TODO: Avoid instantiating empty objects
-		// exhibitionObject.setCurator(new Person());
-		// exhibitionObject.setExhibitionCatalogue(new Literature());
-		// exhibitionObject.setExhibitionVenue(new Place());
 
 		// (Austellung) kuratiert von (Person)
 		List<ExtendedRelationship> ausstellungKuratiertVon = filterList(kuratiertVon,
@@ -328,12 +324,6 @@ public class GentleDataExtractor {
 	private Literature getLiterature(final Entity entity) {
 
 		Literature literatureObject = new Literature(entity);
-		// TODO: Avoid instantiating empty objects
-		// literatureObject.setAuthor(new Person());
-		// literatureObject.setPublisher(new Person());
-		// literatureObject.setPublishedIn(new Place());
-		// literatureObject.setCollectionCatalog(new Institution());
-		// literatureObject.setMedia(new ArrayList<>());
 
 		// Person ist Autor/in von Literatur
 		List<ExtendedRelationship> autorInVonLit = filterList(autorInVon,
@@ -380,12 +370,12 @@ public class GentleDataExtractor {
 	/**
 	 * Mediums...
 	 * 
-	 * @param workId
+	 * @param id
 	 * @return List
 	 */
-	public List<Medium> getMediums(final String workId) {
+	public List<Medium> getMediums(final String id) {
 
-		Set<ExtendedRelationship> mediumSet = filterSet(bilddateiZuWerk, x -> x.getTo().getId().equals(workId));
+		Set<ExtendedRelationship> mediumSet = filterSet(bilddateiZuWerk, x -> x.getTo().getId().equals(id));
 		List<Medium> mediums = new ArrayList<>();
 
 		for (ExtendedRelationship relShip : mediumSet) {
@@ -397,9 +387,7 @@ public class GentleDataExtractor {
 			Entity medium = relShip.getFrom();
 
 			Medium mediumObject = new Medium(medium);
-			// TODO: Avoid instantiating empty objects
-			// mediumObject.setExploitationRight(new Institution());
-			// mediumObject.setPhotographers(new ArrayList<>());
+			
 			List<ExtendedRelationship> rechtAmFoto = filterList(verwertungsrechtAmFoto,
 					x -> x.getFrom().getId().equals(medium.getId()));
 			if (!rechtAmFoto.isEmpty()) {
@@ -448,11 +436,8 @@ public class GentleDataExtractor {
 	 * @return
 	 */
 	private Person getPerson(final Entity entity, int depth) {
+		
 		Person personObject = new Person(entity);
-		// TODO: Avoid instantiating empty objects
-		// personObject.setTeachers(new ArrayList<>());
-		// personObject.setBirthPlace(new Place());
-		// personObject.setPlaceOfDeath(new Place());
 
 		// (Ort) Geburtsort von (Person)
 		List<ExtendedRelationship> geborenIn = filterList(geburtsortVon, x -> x.getTo().getId().equals(entity.getId()));
