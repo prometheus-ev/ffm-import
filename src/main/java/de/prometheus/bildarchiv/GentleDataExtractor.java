@@ -2,7 +2,9 @@ package de.prometheus.bildarchiv;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Predicate;
@@ -227,31 +229,31 @@ public class GentleDataExtractor {
 	}
 
 	private List<Part> getWorkRelations(final List<ExtendedRelationship> relations) {
-		// TODO: wip simplifying filter routines...
-		
 		
 		final List<Part> toReturn = new ArrayList<>();
 		
-//		Stream<Part> map = relations.stream().map(ExtendedRelationship::getTo).map(e -> new Part(e));
+		Stream<Part> stream = relations.stream().map(ExtendedRelationship::getTo).map(x -> new Part(x));
+		Iterator<Part> iterator = stream.iterator();
 		
-		relations.stream().map(ExtendedRelationship::getTo).map(e -> new Part(e)).forEach(p -> {
+		while(iterator.hasNext()) {
 			
-//			Predicate<ExtendedRelationship> predicateFrom = x -> x.getFrom().getId().equals(p.getId());
-//			Predicate<ExtendedRelationship> predicateTo = x -> x.getTo().getId().equals(p.getId());
+			Part part = iterator.next();
 			
-			// Add creators names
-			Set<ExtendedRelationship> partOf = filterSet(hatGeschaffen, x -> x.getTo().getId().equals(p.getId()));
-			List<String> creatorNames = partOf.stream().map(ExtendedRelationship::getFrom)
-					.map(e -> getPersonBranch(e, 0)).map(Person::getTitle).collect(Collectors.toList());
-			p.setCreators(creatorNames);
-
-			// Add location names
-			List<ExtendedRelationship> locRels = filterList(befindetSichIn, x -> x.getFrom().getId().equals(p.getId()));
-			Set<String> locs = locRels.stream().map(ExtendedRelationship::getTo).map(l -> getInstitutionBranch(l))
+			Predicate<ExtendedRelationship> predicateFrom = x -> x.getFrom().getId().equals(part.getId());
+			Predicate<ExtendedRelationship> predicateTo = x -> x.getTo().getId().equals(part.getId());
+			
+			List<String> creators = streamFrom(relations, predicateTo).map(x -> getPersonBranch(x, 0))
+					.map(Person::getTitle).collect(Collectors.toList());
+			
+			Set<String> locations = streamTo(relations, predicateFrom).map(x -> getInstitutionBranch(x))
 					.map(Institution::getTitle).collect(Collectors.toSet());
-			p.setLocation(locs);
-			toReturn.add(p);
-		});
+			
+			part.setCreators(creators);
+			part.setLocation(locations);
+			
+			toReturn.add(part);
+		}
+		
 		return toReturn;
 	}
 
@@ -471,9 +473,9 @@ public class GentleDataExtractor {
 
 		List<Person> teachers = new ArrayList<>();
 
-		filterTo(schuelerInVon, predicateFrom).forEach(t -> {
+		filterTo(schuelerInVon, predicateFrom).forEach(x -> {
 
-			Person teacher = getPersonBranch(t, (depth + 1));
+			Person teacher = getPersonBranch(x, (depth + 1));
 			teachers.add(teacher);
 
 		});
@@ -483,14 +485,22 @@ public class GentleDataExtractor {
 		return preson;
 	}
 
-	private List<Entity> filterFrom(Set<ExtendedRelationship> relations, Predicate<ExtendedRelationship> predicate) {
+	private List<Entity> filterFrom(Collection<ExtendedRelationship> relations, Predicate<ExtendedRelationship> predicate) {
 		return relations.stream().filter(predicate).map(ExtendedRelationship::getFrom).collect(Collectors.toList());
 	}
 
-	private List<Entity> filterTo(Set<ExtendedRelationship> relations, Predicate<ExtendedRelationship> predicate) {
+	private List<Entity> filterTo(Collection<ExtendedRelationship> relations, Predicate<ExtendedRelationship> predicate) {
 		return relations.stream().filter(predicate).map(ExtendedRelationship::getTo).collect(Collectors.toList());
 	}
+	
+	private Stream<Entity> streamFrom(Collection<ExtendedRelationship> relations, Predicate<ExtendedRelationship> predicate) {
+		return relations.stream().filter(predicate).map(ExtendedRelationship::getFrom);
+	}
 
+	private Stream<Entity> streamTo(Collection<ExtendedRelationship> relations, Predicate<ExtendedRelationship> predicate) {
+		return relations.stream().filter(predicate).map(ExtendedRelationship::getTo);
+	}
+	
 	private List<String> getConnections(final List<ExtendedRelationship> relations) {
 		return relations.stream().map(ExtendedRelationship::getTo).map(Entity::getId).collect(Collectors.toList());
 	}
