@@ -29,6 +29,8 @@ import de.prometheus.bildarchiv.model.Work;
 import de.prometheus.bildarchiv.util.GentleUtils;
 import de.prometheus.bildarchiv.util.Relations;
 
+//@formatter:off
+
 /**
  * This marvelous class is used to extract the information described in <a href=
  * "https://github.com/matana/ffm-import/blob/master/20170511_154237.jpg">the
@@ -147,36 +149,38 @@ public class GentleDataExtractor {
 			}
 
 			Work workObject = new Work(workEntity);
+			
+			String identifier = workEntity.getId();
+			Predicate<ExtendedRelationship> predicateFrom = getPredicateFrom(identifier);
+			Predicate<ExtendedRelationship> predicateTo = getPredicateTo(identifier);
 
 			if (workEntity.getSubType() != null) {
+			
 				workObject.setSubtype(workEntity.getSubType());
+			
 			}
 
 			// #1
-			List<Medium> mediumObjects = getMediumBranch(workEntity.getId());
+			List<Medium> mediumObjects = getMediumBranch(identifier);
 			workObject.setMediums(mediumObjects);
 
 			// #2
-			Set<ExtendedRelationship> personWorkRel = filterSet(hatGeschaffen,
-					x -> x.getTo().getId().equals(workEntity.getId()));
+			Set<ExtendedRelationship> personWorkRel = filterSet(hatGeschaffen, predicateTo);
 			List<Person> creators = getCreators(personWorkRel);
 			workObject.setCreators(creators);
 
 			// #3
-			Set<ExtendedRelationship> workLitRel = filterSet(basisdatenZumWerkAus,
-					x -> x.getFrom().getId().equals(workEntity.getId()));
+			Set<ExtendedRelationship> workLitRel = filterSet(basisdatenZumWerkAus, predicateFrom);
 			List<Literature> illustrations = getLiterature(workLitRel);
 			workObject.setIllustrations(illustrations);
 
 			// #4
-			List<ExtendedRelationship> werkAusRel = filterList(ausgestellteWerke,
-					x -> x.getTo().getId().equals(workEntity.getId()));
+			List<ExtendedRelationship> werkAusRel = filterList(ausgestellteWerke, predicateTo);
 			List<Exhibition> exhibitions = getExhibitions(werkAusRel);
 			workObject.setExhibitions(exhibitions);
 
 			// #5 (Werk) befindet sich in (Institution)
-			List<ExtendedRelationship> workInstRel = filterList(befindetSichIn,
-					x -> x.getFrom().getId().equals(workEntity.getId()));
+			List<ExtendedRelationship> workInstRel = filterList(befindetSichIn, predicateFrom);
 			if (!workInstRel.isEmpty()) {
 				Entity institutionEntity = workInstRel.get(0).getTo();
 				Institution institutionObject = getInstitutionBranch(institutionEntity);
@@ -184,28 +188,24 @@ public class GentleDataExtractor {
 			}
 
 			// #6 (Person) ist Auftraggeber von (Werk)
-			List<ExtendedRelationship> comWorkRel = filterList(auftraggeberVonWerk,
-					x -> x.getTo().getId().equals(workEntity.getId()));
+			List<ExtendedRelationship> comWorkRel = filterList(auftraggeberVonWerk, predicateTo);
 			if (!comWorkRel.isEmpty()) {
 				Person commissionerObject = getPersonBranch(comWorkRel.get(0).getFrom(), 0);
 				workObject.setCommissioner(commissionerObject);
 			}
 
 			// #7 (Werk) steht in Verbindung zu (Werk)
-			List<ExtendedRelationship> workConRel = filterList(stehtInVerbindungZu,
-					x -> x.getTo().getId().equals(workEntity.getId()));
+			List<ExtendedRelationship> workConRel = filterList(stehtInVerbindungZu, predicateTo);
 			List<String> connections = getConnections(workConRel);
 			workObject.setConnectionsTo(connections);
 
 			// #8 (Werk) ist Teil von (Werk)
-			List<ExtendedRelationship> workPartRel = filterList(istTeilVon,
-					x -> x.getFrom().getId().equals(workEntity.getId()));
+			List<ExtendedRelationship> workPartRel = filterList(istTeilVon, predicateFrom);
 			List<Part> relations = getWorkRelations(workPartRel);
 			workObject.setParts(relations);
 
 			// #9 (Werk) stellt dar (Person)
-			List<ExtendedRelationship> workPerRel = filterList(stelltDar,
-					x -> x.getFrom().getId().equals(workEntity.getId()));
+			List<ExtendedRelationship> workPerRel = filterList(stelltDar, predicateFrom);
 			List<Person> portrayals = getPortrayals(workPerRel);
 			if (!portrayals.isEmpty()) {
 				workObject.setPortrayal(portrayals.get(0));
@@ -223,11 +223,18 @@ public class GentleDataExtractor {
 		GentleUtils.finalExport(works, extendedRelsFile.getParentFile());
 	}
 
+	/**
+	 * @param relations
+	 * @return
+	 */
 	private List<Person> getPortrayals(final List<ExtendedRelationship> relations) {
-		return relations.stream().map(ExtendedRelationship::getTo).map(p -> getPersonBranch(p, 0))
-				.collect(Collectors.toList());
+		return relations.stream().map(ExtendedRelationship::getTo).map(x -> getPersonBranch(x, 0)).collect(Collectors.toList());
 	}
 
+	/**
+	 * @param relations
+	 * @return
+	 */
 	private List<Part> getWorkRelations(final List<ExtendedRelationship> relations) {
 		
 		final List<Part> toReturn = new ArrayList<>();
@@ -239,8 +246,14 @@ public class GentleDataExtractor {
 			
 			Part part = iterator.next();
 			
-			Predicate<ExtendedRelationship> predicateFrom = x -> x.getFrom().getId().equals(part.getId());
-			Predicate<ExtendedRelationship> predicateTo = x -> x.getTo().getId().equals(part.getId());
+			if(part == null) {
+				
+				continue;
+				
+			}
+			
+			Predicate<ExtendedRelationship> predicateFrom = getPredicateFrom(part.getId());
+			Predicate<ExtendedRelationship> predicateTo = getPredicateTo(part.getId());
 			
 			List<String> creators = streamFrom(relations, predicateTo).map(x -> getPersonBranch(x, 0))
 					.map(Person::getTitle).collect(Collectors.toList());
@@ -256,7 +269,7 @@ public class GentleDataExtractor {
 		
 		return toReturn;
 	}
-
+	
 	/**
 	 * Ausstellung
 	 * 
@@ -267,8 +280,8 @@ public class GentleDataExtractor {
 
 		Exhibition exhibition = new Exhibition(entity);
 
-		Predicate<ExtendedRelationship> predicateFrom = x -> x.getFrom().getId().equals(entity.getId());
-		Predicate<ExtendedRelationship> predicateTo = x -> x.getTo().getId().equals(entity.getId());
+		Predicate<ExtendedRelationship> predicateFrom = getPredicateFrom(entity.getId());
+		Predicate<ExtendedRelationship> predicateTo = getPredicateTo(entity.getId());
 
 		// (Austellung) kuratiert von (Person)
 		List<Entity> persons = filterTo(kuratiertVon, predicateFrom);
@@ -313,8 +326,8 @@ public class GentleDataExtractor {
 
 		Literature literature = new Literature(entity);
 
-		Predicate<ExtendedRelationship> predicateFrom = x -> x.getFrom().getId().equals(entity.getId());
-		Predicate<ExtendedRelationship> predicateTo = x -> x.getTo().getId().equals(entity.getId());
+		Predicate<ExtendedRelationship> predicateFrom = getPredicateFrom(entity.getId());
+		Predicate<ExtendedRelationship> predicateTo = getPredicateTo(entity.getId());
 
 		// Person ist Autor/in von Literatur
 		List<Entity> autors = filterFrom(autorInVon, predicateTo);
@@ -368,9 +381,10 @@ public class GentleDataExtractor {
 	 * @param id
 	 * @return List
 	 */
-	public List<Medium> getMediumBranch(final String id) {
+	public List<Medium> getMediumBranch(final String identifier) {
 
-		Predicate<ExtendedRelationship> predicateTo = x -> x.getTo().getId().equals(id);
+		Predicate<ExtendedRelationship> predicateTo = getPredicateTo(identifier);
+		
 		List<Entity> images = filterFrom(bilddateiZuWerk, predicateTo);
 
 		List<Medium> mediums = new ArrayList<>();
@@ -385,7 +399,7 @@ public class GentleDataExtractor {
 
 			Medium medium = new Medium(image);
 
-			Predicate<ExtendedRelationship> predicateFrom = x -> x.getFrom().getId().equals(image.getId());
+			Predicate<ExtendedRelationship> predicateFrom = getPredicateFrom(image.getId());
 
 			List<Entity> rights = filterTo(verwertungsrechtAmFoto, predicateFrom);
 			List<Entity> persons = filterTo(fotografiertVon, predicateFrom);
@@ -423,7 +437,7 @@ public class GentleDataExtractor {
 
 		Institution institution = new Institution(entity);
 
-		Predicate<ExtendedRelationship> predicateFrom = x -> x.getFrom().getId().equals(entity.getId());
+		Predicate<ExtendedRelationship> predicateFrom = getPredicateFrom(entity.getId());
 
 		List<Entity> places = filterTo(institutionInOrt, predicateFrom);
 
@@ -447,8 +461,8 @@ public class GentleDataExtractor {
 
 		Person preson = new Person(entity);
 
-		Predicate<ExtendedRelationship> predicateTo = x -> x.getTo().getId().equals(entity.getId());
-		Predicate<ExtendedRelationship> predicateFrom = x -> x.getFrom().getId().equals(entity.getId());
+		Predicate<ExtendedRelationship> predicateTo = getPredicateTo(entity.getId());
+		Predicate<ExtendedRelationship> predicateFrom = getPredicateFrom(entity.getId());
 
 		List<Entity> birthPlaces = filterFrom(geburtsortVon, predicateTo);
 		List<Entity> deathPlaces = filterFrom(sterbeOrt, predicateTo);
@@ -484,6 +498,14 @@ public class GentleDataExtractor {
 
 		return preson;
 	}
+	
+	private static Predicate<ExtendedRelationship> getPredicateFrom(final String identifier) {
+		return x -> x.getFrom().getId().equals(identifier);
+	}
+	
+	private static Predicate<ExtendedRelationship> getPredicateTo(final String identifier) {
+		return x -> x.getTo().getId().equals(identifier);
+	}
 
 	private List<Entity> filterFrom(Collection<ExtendedRelationship> relations, Predicate<ExtendedRelationship> predicate) {
 		return relations.stream().filter(predicate).map(ExtendedRelationship::getFrom).collect(Collectors.toList());
@@ -506,33 +528,30 @@ public class GentleDataExtractor {
 	}
 
 	private List<Exhibition> getExhibitions(final List<ExtendedRelationship> relations) {
-		return relations.stream().map(ExtendedRelationship::getFrom).map(e -> getExhibitionBranch(e))
-				.collect(Collectors.toList());
+		return relations.stream().map(ExtendedRelationship::getFrom).map(x -> getExhibitionBranch(x)).collect(Collectors.toList());
 	}
 
 	private List<Literature> getLiterature(final Set<ExtendedRelationship> relations) {
-		return relations.stream().map(ExtendedRelationship::getTo).map(l -> getLiteratureBranch(l))
-				.collect(Collectors.toList());
+		return relations.stream().map(ExtendedRelationship::getTo).map(x -> getLiteratureBranch(x)).collect(Collectors.toList());
 	}
 
 	private List<Person> getCreators(final Set<ExtendedRelationship> relations) {
-		return relations.stream().map(ExtendedRelationship::getFrom).map(c -> getPersonBranch(c, 0))
-				.collect(Collectors.toList());
+		return relations.stream().map(ExtendedRelationship::getFrom).map(x -> getPersonBranch(x, 0)).collect(Collectors.toList());
 	}
 
-	private List<ExtendedRelationship> filterList(final Set<ExtendedRelationship> relation,
-			Predicate<ExtendedRelationship> predicte) {
+	private List<ExtendedRelationship> filterList(final Set<ExtendedRelationship> relation, Predicate<ExtendedRelationship> predicte) {
 		return relation.stream().filter(predicte).collect(Collectors.toList());
 	}
-
-	private Set<ExtendedRelationship> filterSet(final Set<ExtendedRelationship> relation,
-			Predicate<ExtendedRelationship> predicte) {
+	
+	private Set<ExtendedRelationship> filterSet(final Set<ExtendedRelationship> relation, Predicate<ExtendedRelationship> predicte) {
 		return relation.stream().filter(predicte).collect(Collectors.toSet());
 	}
 
-	private Set<ExtendedRelationship> filterRelationships(final Set<ExtendedRelationship> relationships,
-			final String id) {
-		return relationships.stream().filter(r -> r.getRelation().getId().equals(id)).collect(Collectors.toSet());
+	private Set<ExtendedRelationship> filterRelationships(final Set<ExtendedRelationship> relationships, final String identifier) {
+		return relationships.stream().filter(x -> x.getRelation().getId().equals(identifier)).collect(Collectors.toSet());
 	}
+	
+
+	// @formatter:off
 
 }
