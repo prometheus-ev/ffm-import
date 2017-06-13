@@ -70,6 +70,7 @@ public class GentleSegmentMerger {
 		}
 		
 		RecordTypeWrapper entityRecords = new RecordTypeWrapper(getRecords(new File(dataDirectory, "ENTITIES/")));
+		
 		Set<Entity> entities = entityRecords.getEntities();
 		
 		if (logger.isInfoEnabled()) {
@@ -77,6 +78,7 @@ public class GentleSegmentMerger {
 		}
 		
 		RecordTypeWrapper relRecords = new RecordTypeWrapper(getRecords(new File(dataDirectory, "RELATIONSHIPS/")));
+		
 		Set<Relationship> relationships = relRecords.getRelationships();
 		
 		if (logger.isInfoEnabled()) {
@@ -130,6 +132,7 @@ public class GentleSegmentMerger {
 	private Set<RecordType> getRecords(final File directory) throws FileNotFoundException {
 		
 		File[] files = getFiles(directory, ".kor");
+		
 		Set<RecordType> records = new HashSet<>();
 		
 		for (File file : files) {
@@ -146,10 +149,14 @@ public class GentleSegmentMerger {
 		}
 		
 		File[] files = directory.listFiles(new FileFilter() {
+			
 			@Override
 			public boolean accept(File pathname) {
+			
 				return pathname.getName().endsWith(suffix);
+			
 			}
+			
 		});
 		
 		return files;
@@ -230,8 +237,8 @@ public class GentleSegmentMerger {
 			for (String id : entities) {
 				
 				String url = Endpoint.ENTITIES.getRecord(id);
-				HttpURLConnection c = GentleUtils.getHttpURLConnection(url);
-				OAIPMHtypeWrapper oaiWrapper = new OAIPMHtypeWrapper(GentleUtils.unmarshalOAIPMHtype(c, url));
+				HttpURLConnection connection = GentleUtils.getHttpURLConnection(url);
+				OAIPMHtypeWrapper oaiWrapper = new OAIPMHtypeWrapper(GentleUtils.unmarshalOAIPMHtype(connection, url));
 				
 				if (oaiWrapper.validEntity()) {
 					Entity entity = oaiWrapper.getEntity();
@@ -240,7 +247,7 @@ public class GentleSegmentMerger {
 				}
 
 				try {
-					Thread.sleep(200); // and again... some nice gentleness to the stressed server :-D
+					Thread.sleep(300); // and again... some nice gentleness to the stressed server :-D
 				} catch (InterruptedException e) {
 					logger.error(e.toString());
 				}
