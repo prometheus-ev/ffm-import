@@ -4,12 +4,10 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import javax.xml.bind.JAXBException;
 
@@ -40,6 +38,8 @@ import de.prometheus.bildarchiv.util.Relations;
  *
  */
 public class GentleDataExtractor {
+
+	private static final int DELIMITER = 1;
 
 	private Logger logger = LogManager.getLogger(GentleDataExtractor.class);
 
@@ -139,83 +139,75 @@ public class GentleDataExtractor {
 
 		final Set<Work> works = new HashSet<>();
 
-		for (ExtendedRelationship mw : bilddateiZuWerk) {
+		for (ExtendedRelationship relationship : bilddateiZuWerk) {
 
-			final Entity mediumEntity = mw.getFrom();
-			final Entity workEntity = mw.getTo();
+			final Entity mediumEntity = relationship.getFrom();
+			final Entity workEntity = relationship.getTo();
 
 			if (workEntity == null || mediumEntity == null) {
 				continue;
 			}
 
-			Work workObject = new Work(workEntity);
+			Work work = new Work(workEntity);
 			
 			String identifier = workEntity.getId();
+			
 			Predicate<ExtendedRelationship> predicateFrom = getPredicateFrom(identifier);
 			Predicate<ExtendedRelationship> predicateTo = getPredicateTo(identifier);
 
 			if (workEntity.getSubType() != null) {
-			
-				workObject.setSubtype(workEntity.getSubType());
-			
+				work.setSubtype(workEntity.getSubType());
 			}
 
 			// #1
 			List<Medium> mediumObjects = getMediumBranch(identifier);
-			workObject.setMediums(mediumObjects);
+			work.setMediums(mediumObjects);
 
 			// #2
-			Set<ExtendedRelationship> personWorkRel = filterSet(hatGeschaffen, predicateTo);
-			List<Person> creators = getCreators(personWorkRel);
-			workObject.setCreators(creators);
+			List<Person> creators = getPersons(filterFrom(hatGeschaffen, predicateTo));
+			work.setCreators(creators);
 
 			// #3
-			Set<ExtendedRelationship> workLitRel = filterSet(basisdatenZumWerkAus, predicateFrom);
-			List<Literature> illustrations = getLiterature(workLitRel);
-			workObject.setIllustrations(illustrations);
+			List<Literature> illustrations = getLiteratures(filterTo(basisdatenZumWerkAus, predicateFrom));
+			work.setIllustrations(illustrations);
 
 			// #4
-			List<ExtendedRelationship> werkAusRel = filterList(ausgestellteWerke, predicateTo);
-			List<Exhibition> exhibitions = getExhibitions(werkAusRel);
-			workObject.setExhibitions(exhibitions);
+			List<Exhibition> exhibitions = getExhibitions(filterFrom(ausgestellteWerke, predicateTo));
+			work.setExhibitions(exhibitions);
 
 			// #5 (Werk) befindet sich in (Institution)
-			List<ExtendedRelationship> workInstRel = filterList(befindetSichIn, predicateFrom);
-			if (!workInstRel.isEmpty()) {
-				Entity institutionEntity = workInstRel.get(0).getTo();
-				Institution institutionObject = getInstitutionBranch(institutionEntity);
-				workObject.setLocatedIn(institutionObject);
+			List<Entity> institutions = filterTo(befindetSichIn, predicateFrom);
+			if (!institutions.isEmpty()) {
+				Institution institution = getInstitutionBranch(institutions.get(0));
+				work.setLocatedIn(institution);
 			}
 
 			// #6 (Person) ist Auftraggeber von (Werk)
-			List<ExtendedRelationship> comWorkRel = filterList(auftraggeberVonWerk, predicateTo);
-			if (!comWorkRel.isEmpty()) {
-				Person commissionerObject = getPersonBranch(comWorkRel.get(0).getFrom(), 0);
-				workObject.setCommissioner(commissionerObject);
+			List<Entity> commissioners = filterFrom(auftraggeberVonWerk, predicateTo);
+			if (!commissioners.isEmpty()) {
+				Person commissioner = getPersonBranch(commissioners.get(0), 0);
+				work.setCommissioner(commissioner);
 			}
 
 			// #7 (Werk) steht in Verbindung zu (Werk)
-			List<ExtendedRelationship> workConRel = filterList(stehtInVerbindungZu, predicateTo);
-			List<String> connections = getConnections(workConRel);
-			workObject.setConnectionsTo(connections);
+			List<String> connections = getConnections(filterFrom(stehtInVerbindungZu, predicateTo));
+			work.setConnectionsTo(connections);
 
 			// #8 (Werk) ist Teil von (Werk)
-			List<ExtendedRelationship> workPartRel = filterList(istTeilVon, predicateFrom);
-			List<Part> relations = getWorkRelations(workPartRel);
-			workObject.setParts(relations);
+			List<Part> relations = getWorkRelations(filterTo(istTeilVon, predicateFrom));
+			work.setParts(relations);
 
 			// #9 (Werk) stellt dar (Person)
-			List<ExtendedRelationship> workPerRel = filterList(stelltDar, predicateFrom);
-			List<Person> portrayals = getPortrayals(workPerRel);
+			List<Person> portrayals = getPersons(filterTo(stelltDar, predicateFrom));
 			if (!portrayals.isEmpty()) {
-				workObject.setPortrayal(portrayals.get(0));
+				work.setPortrayal(portrayals.get(0));
 			}
 
 			// collect work object
-			works.add(workObject);
+			works.add(work);
 
 			if (logger.isInfoEnabled()) {
-				logger.info("Added new work object '" + workObject.getTitle());
+				logger.info("Added new work object '" + work.getTitle());
 			}
 
 		}
@@ -227,39 +219,26 @@ public class GentleDataExtractor {
 	 * @param relations
 	 * @return
 	 */
-	private List<Person> getPortrayals(final List<ExtendedRelationship> relations) {
-		return relations.stream().map(ExtendedRelationship::getTo).map(x -> getPersonBranch(x, 0)).collect(Collectors.toList());
-	}
-
-	/**
-	 * @param relations
-	 * @return
-	 */
-	private List<Part> getWorkRelations(final List<ExtendedRelationship> relations) {
+	private List<Part> getWorkRelations(final List<Entity> entities) {
 		
 		final List<Part> toReturn = new ArrayList<>();
 		
-		Stream<Part> stream = relations.stream().map(ExtendedRelationship::getTo).map(x -> new Part(x));
-		Iterator<Part> iterator = stream.iterator();
+		List<Part> parts = getParts(entities);
 		
-		while(iterator.hasNext()) {
-			
-			Part part = iterator.next();
+		for (Part part : parts) {
 			
 			if(part == null) {
-				
 				continue;
-				
 			}
 			
 			Predicate<ExtendedRelationship> predicateFrom = getPredicateFrom(part.getId());
 			Predicate<ExtendedRelationship> predicateTo = getPredicateTo(part.getId());
 			
-			List<String> creators = streamFrom(relations, predicateTo).map(x -> getPersonBranch(x, 0))
-					.map(Person::getTitle).collect(Collectors.toList());
+			List<String> creators = getPersons(filterFrom(istTeilVon, predicateTo))
+					.stream().map(Person::getTitle).collect(Collectors.toList());
 			
-			Set<String> locations = streamTo(relations, predicateFrom).map(x -> getInstitutionBranch(x))
-					.map(Institution::getTitle).collect(Collectors.toSet());
+			Set<String> locations = getLocations(filterTo(istTeilVon, predicateFrom))
+					.stream().map(Institution::getTitle).collect(Collectors.toSet());
 			
 			part.setCreators(creators);
 			part.setLocation(locations);
@@ -269,7 +248,7 @@ public class GentleDataExtractor {
 		
 		return toReturn;
 	}
-	
+
 	/**
 	 * Ausstellung
 	 * 
@@ -287,30 +266,24 @@ public class GentleDataExtractor {
 		List<Entity> persons = filterTo(kuratiertVon, predicateFrom);
 
 		if (!persons.isEmpty()) {
-
 			Person person = getPersonBranch(persons.get(0), 0);
 			exhibition.setCurator(person);
-
 		}
 
 		// (Austellung) wurde gezeigt in (Ort)
 		List<Entity> places = filterTo(wurdeGezeigtIn, predicateFrom);
 
 		if (!places.isEmpty()) {
-
 			Place place = new Place(places.get(0));
 			exhibition.setExhibitionVenue(place);
-
 		}
 
 		// (Ausstellung) Ausstellungskatalog zu Ausstellung (Literatur)
 		List<Entity> literatures = filterFrom(ausstellungskatalogZu, predicateTo);
 
 		if (!literatures.isEmpty()) {
-
 			Literature literature = getLiteratureBranch(literatures.get(0));
 			exhibition.setExhibitionCatalogue(literature);
-
 		}
 
 		return exhibition;
@@ -333,36 +306,28 @@ public class GentleDataExtractor {
 		List<Entity> autors = filterFrom(autorInVon, predicateTo);
 
 		if (!autors.isEmpty()) {
-
 			literature.setAuthor(getPersonBranch(autors.get(0), 0));
-
 		}
 
 		// Person ist Herausgeberin/in von Literatur
 		List<Entity> publishers = filterFrom(herausgeberInVon, predicateTo);
 
 		if (!publishers.isEmpty()) {
-
 			literature.setPublisher(getPersonBranch(publishers.get(0), 0));
-
 		}
 
 		// Literatur erschienen in Ort
 		List<Entity> places = filterTo(erschienenIn, predicateFrom);
 
 		if (!places.isEmpty()) {
-
 			literature.setPublishedIn(new Place(places.get(0)));
-
 		}
 
 		// Literatur Sammlungskatalog von Institution
 		List<Entity> catalogs = filterTo(sammlungskatalog, predicateFrom);
 
 		if (!catalogs.isEmpty()) {
-
 			literature.setCollectionCatalog(getInstitutionBranch(catalogs.get(0)));
-
 		}
 
 		// (Literatur) Literatur enthält Bilddatei (Medium)
@@ -392,9 +357,7 @@ public class GentleDataExtractor {
 		for (Entity image : images) {
 
 			if (image.getImagePath() == null) {
-
 				continue;
-
 			}
 
 			Medium medium = new Medium(image);
@@ -405,9 +368,7 @@ public class GentleDataExtractor {
 			List<Entity> persons = filterTo(fotografiertVon, predicateFrom);
 
 			if (!rights.isEmpty()) {
-
 				medium.setExploitationRight(getInstitutionBranch(rights.get(0)));
-
 			}
 
 			List<Person> photographers = new ArrayList<>();
@@ -442,9 +403,7 @@ public class GentleDataExtractor {
 		List<Entity> places = filterTo(institutionInOrt, predicateFrom);
 
 		if (!places.isEmpty()) {
-
 			institution.setLocation(new Place(places.get(0)));
-
 		}
 
 		return institution;
@@ -468,21 +427,15 @@ public class GentleDataExtractor {
 		List<Entity> deathPlaces = filterFrom(sterbeOrt, predicateTo);
 
 		if (!birthPlaces.isEmpty()) {
-
 			preson.setBirthPlace(new Place(birthPlaces.get(0)));
-
 		}
 
 		if (!deathPlaces.isEmpty()) {
-
 			preson.setPlaceOfDeath(new Place(deathPlaces.get(0)));
-
 		}
 
-		if (depth == 1) { // stop recursion
-
+		if (depth == DELIMITER) { // stop recursion
 			return preson;
-
 		}
 
 		List<Person> teachers = new ArrayList<>();
@@ -515,36 +468,28 @@ public class GentleDataExtractor {
 		return relations.stream().filter(predicate).map(ExtendedRelationship::getTo).collect(Collectors.toList());
 	}
 	
-	private Stream<Entity> streamFrom(Collection<ExtendedRelationship> relations, Predicate<ExtendedRelationship> predicate) {
-		return relations.stream().filter(predicate).map(ExtendedRelationship::getFrom);
-	}
-
-	private Stream<Entity> streamTo(Collection<ExtendedRelationship> relations, Predicate<ExtendedRelationship> predicate) {
-		return relations.stream().filter(predicate).map(ExtendedRelationship::getTo);
+	private List<Institution> getLocations(final Collection<Entity> entities) {
+		return entities.stream().map(x -> getInstitutionBranch(x)).collect(Collectors.toList());
 	}
 	
-	private List<String> getConnections(final List<ExtendedRelationship> relations) {
-		return relations.stream().map(ExtendedRelationship::getTo).map(Entity::getId).collect(Collectors.toList());
-	}
-
-	private List<Exhibition> getExhibitions(final List<ExtendedRelationship> relations) {
-		return relations.stream().map(ExtendedRelationship::getFrom).map(x -> getExhibitionBranch(x)).collect(Collectors.toList());
-	}
-
-	private List<Literature> getLiterature(final Set<ExtendedRelationship> relations) {
-		return relations.stream().map(ExtendedRelationship::getTo).map(x -> getLiteratureBranch(x)).collect(Collectors.toList());
-	}
-
-	private List<Person> getCreators(final Set<ExtendedRelationship> relations) {
-		return relations.stream().map(ExtendedRelationship::getFrom).map(x -> getPersonBranch(x, 0)).collect(Collectors.toList());
-	}
-
-	private List<ExtendedRelationship> filterList(final Set<ExtendedRelationship> relation, Predicate<ExtendedRelationship> predicte) {
-		return relation.stream().filter(predicte).collect(Collectors.toList());
+	private List<Part> getParts(final Collection<Entity> entities) {
+		return entities.stream().map(x -> new Part(x)).collect(Collectors.toList());
 	}
 	
-	private Set<ExtendedRelationship> filterSet(final Set<ExtendedRelationship> relation, Predicate<ExtendedRelationship> predicte) {
-		return relation.stream().filter(predicte).collect(Collectors.toSet());
+	private List<String> getConnections(final Collection<Entity> entities) {
+		return entities.stream().map(Entity::getId).collect(Collectors.toList());
+	}
+
+	private List<Exhibition> getExhibitions(final Collection<Entity> entities) {
+		return entities.stream().map(x -> getExhibitionBranch(x)).collect(Collectors.toList());
+	}
+
+	private List<Literature> getLiteratures(final Collection<Entity> entities) {
+		return entities.stream().map(x -> getLiteratureBranch(x)).collect(Collectors.toList());
+	}
+
+	private List<Person> getPersons(final Collection<Entity> entities) {
+		return entities.stream().map(x -> getPersonBranch(x, 0)).collect(Collectors.toList());
 	}
 
 	private Set<ExtendedRelationship> filterRelationships(final Set<ExtendedRelationship> relationships, final String identifier) {
