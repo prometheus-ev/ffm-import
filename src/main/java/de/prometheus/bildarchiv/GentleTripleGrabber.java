@@ -59,8 +59,8 @@ public class GentleTripleGrabber {
 					+ ", estimatedTime~" + (requestDuration * (listSize / 50 /* records per request */) / 1000 / 60) + " min");
 		}
 
-		ProgressBar prgress = new ProgressBar(listSize);
-		prgress.start();
+		ProgressBar progress = new ProgressBar(listSize);
+		progress.start();
 
 		do {
 
@@ -77,7 +77,7 @@ public class GentleTripleGrabber {
 				executor.execute(writeObject(parent, endpoint.name(), new HashSet<RecordType>(records),
 						index.incrementAndGet()));
 				recordCount += records.size();
-				prgress.increment(records.size());
+				progress.increment(records.size());
 			}
 
 			url = endpoint.listRecords(resumptionToken.getValue());
@@ -90,7 +90,7 @@ public class GentleTripleGrabber {
 
 		} while (true);
 
-		prgress.done();
+		progress.done();
 
 		try {
 			// wait until all files are written
