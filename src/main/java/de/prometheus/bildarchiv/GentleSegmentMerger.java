@@ -57,7 +57,6 @@ public class GentleSegmentMerger {
 		System.setProperty("apiKey", properties.getProperty("apiKey"));
 		System.setProperty("baseUrl", properties.getProperty("baseUrl"));
 		
-		//GentleSegmentMerger merger = new GentleSegmentMerger("/Users/matana/Documents/mars/workspace/ffm-import");
 		GentleSegmentMerger merger = new GentleSegmentMerger("/tmp");
 		merger.mergeEntitiesAndRelationships();
 	}
