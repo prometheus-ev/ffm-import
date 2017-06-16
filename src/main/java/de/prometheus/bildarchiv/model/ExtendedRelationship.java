@@ -16,9 +16,9 @@ import org.openarchives.model.Entity;
 import org.openarchives.model.Relationship;
 import org.openarchives.model.Relationship.Properties.Property;
 
-
 @XmlAccessorType(XmlAccessType.FIELD)
-@XmlType(name = "relationship", propOrder = { "id", "createdAt", "updatedAt", "name", "relation", "from", "to", "properties" })
+@XmlType(name = "relationship", propOrder = { "id", "createdAt", "updatedAt", "name", "relation", "from", "to",
+		"properties" })
 public class ExtendedRelationship implements Serializable {
 
 	private static final long serialVersionUID = -8533040673528252526L;
@@ -42,42 +42,31 @@ public class ExtendedRelationship implements Serializable {
 	protected List<String> properties = new ArrayList<>();
 
 	public ExtendedRelationship() { }
-	
+
 	public ExtendedRelationship(Relationship relationship) {
-		
+
 		this.id = relationship.getId();
 		this.createdAt = relationship.getCreatedAt();
 		this.updatedAt = relationship.getUpdatedAt();
 		this.name = relationship.getName();
-		
+
 		this.from = new Entity(relationship.getFrom());
 		this.to = new Entity(relationship.getTo());
-		
-		setProperties(relationship);
-		setRelation(relationship);
-		
-	}
 
-	private void setRelation(Relationship relationship) {
-		
-		Relation relation = new Relation();
-		
-		relation.id = relationship.getRelation().getId();
-		relation.name = relationship.getRelation().getName();
-		relation.reverseName = relationship.getRelation().getReverseName();
-		
-		this.relation = relation;
-		
+		this.relation = new Relation(relationship);
+
+		setProperties(relationship);
+
 	}
 
 	private void setProperties(Relationship relationship) {
-		
+
 		List<Property> property = relationship.getProperties().getProperty();
-		
+
 		for (Property prop : property) {
 			properties.add(prop.getValue());
 		}
-		
+
 	}
 
 	public String getId() {
@@ -147,6 +136,17 @@ public class ExtendedRelationship implements Serializable {
 		protected String name;
 		@XmlAttribute(name = "reverse-name", required = true)
 		protected String reverseName;
+
+		public Relation() {
+		}
+
+		public Relation(Relationship relationship) {
+
+			this.id = relationship.getRelation().getId();
+			this.name = relationship.getRelation().getName();
+			this.reverseName = relationship.getRelation().getReverseName();
+
+		}
 
 		public String getId() {
 			return id;
