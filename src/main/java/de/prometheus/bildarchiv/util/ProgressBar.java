@@ -24,7 +24,7 @@ public class ProgressBar {
 		synchronized (this) {
 			if (i >= ratio) {
 				if(INTERRUPTED) {
-					System.out.print(ANSI_GREEN);
+					System.out.print("continueing ... " + ANSI_GREEN + "|");
 					INTERRUPTED = false;
 				}
 				System.out.print("=");

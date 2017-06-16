@@ -51,10 +51,11 @@ public final class GentleUtils {
 	 *            {@link HttpURLConnection}
 	 * @param URL
 	 * @return JAXBElement
+	 * @throws HttpRequestException 
 	 * @throws JAXBException
 	 * @throws IOException
 	 */
-	public static JAXBElement<OAIPMHtype> unmarshalOAIPMHtype(HttpURLConnection connection, final String url) {
+	public static JAXBElement<OAIPMHtype> unmarshalOAIPMHtype(HttpURLConnection connection, final String url) throws HttpRequestException {
 
 		HttpURLConnection httpConnection = connection;
 
@@ -65,11 +66,7 @@ public final class GentleUtils {
 			}
 
 			if (url != null) {
-				try {
-					httpConnection = getHttpURLConnection(url);
-				} catch (HttpRequestException e) {
-					logger.error(e.toString());
-				}
+				httpConnection = getHttpURLConnection(url);
 			}
 
 		}
@@ -119,13 +116,14 @@ public final class GentleUtils {
 
 			if (code == 200) {
 				return connection;
+			} else if (code == 400) {
+				return null;
 			} else {
-				throw new HttpRequestException("ResponseCode " + code);
+				throw new HttpRequestException("Response Code " + code + " url=" +url);
 			}
 
 		} catch (IOException e) {
-			ProgressBar.error();
-			logger.error(e.toString());
+			logger.error("Line 126 " + e.toString());
 		}
 
 		return null;

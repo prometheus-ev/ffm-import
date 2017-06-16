@@ -16,7 +16,6 @@ import org.apache.commons.cli.ParseException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import de.prometheus.bildarchiv.exception.HttpRequestException;
 import de.prometheus.bildarchiv.exception.NoSuchEndpointException;
 import de.prometheus.bildarchiv.model.ExtendedRelationship;
 import de.prometheus.bildarchiv.util.Endpoint;
@@ -87,8 +86,6 @@ public class Application {
 		} catch (ParseException e) {
 			logger.error(e.toString());
 		} catch (FileNotFoundException e) {
-			logger.error(e.toString());
-		} catch (HttpRequestException e) {
 			logger.error(e.toString());
 		} finally {
 			

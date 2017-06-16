@@ -39,7 +39,7 @@ public class GentleTripleGrabber {
 		this.dataDirectory = dataDirectory;
 	}
 
-	public void listRecords(Endpoint endpoint) throws NoSuchEndpointException, HttpRequestException {
+	public void listRecords(Endpoint endpoint) throws NoSuchEndpointException {
 
 		ExecutorService executor = Executors.newFixedThreadPool(1);
 		AtomicInteger index = new AtomicInteger();
@@ -62,31 +62,42 @@ public class GentleTripleGrabber {
 		ProgressBar progress = new ProgressBar(listSize);
 		progress.start();
 
-		do {
-
-			HttpURLConnection connection = GentleUtils.getHttpURLConnection(url);
-			OAIPMHtypeWrapper oaiWrapper = new OAIPMHtypeWrapper(GentleUtils.unmarshalOAIPMHtype(connection, url));
-
-			resumptionToken = oaiWrapper.getResumptionToken();
-			if (resumptionToken == null || resumptionToken.getValue() == null) {
-				break;
-			}
-
-			List<RecordType> records = oaiWrapper.getRecords();
-			if (!nullOrEmptyRecords(records)) {
-				executor.execute(writeObject(parent, endpoint.name(), new HashSet<RecordType>(records),
-						index.incrementAndGet()));
-				recordCount += records.size();
-				progress.increment(records.size());
-			}
-
-			url = endpoint.listRecords(resumptionToken.getValue());
+		loop:do {
 
 			try {
-				Thread.sleep(300); // the gentleness :-)
-			} catch (InterruptedException e) {
+				
+				HttpURLConnection connection = GentleUtils.getHttpURLConnection(url);
+				
+				OAIPMHtypeWrapper oaiWrapper = new OAIPMHtypeWrapper(GentleUtils.unmarshalOAIPMHtype(connection, url));
+
+				resumptionToken = oaiWrapper.getResumptionToken();
+				if (resumptionToken == null || resumptionToken.getValue() == null) {
+					break loop;
+				}
+
+				List<RecordType> records = oaiWrapper.getRecords();
+				if (!nullOrEmptyRecords(records)) {
+					int indexPos = index.incrementAndGet();
+					executor.execute(writeObject(parent, endpoint, new HashSet<RecordType>(records), indexPos));
+					executor.execute(writeXml(url, indexPos, endpoint, parent));
+					recordCount += records.size();
+					progress.increment(records.size());
+				}
+
+				url = endpoint.listRecords(resumptionToken.getValue());
+
+				try {
+					Thread.sleep(300); // the gentleness :-)
+				} catch (InterruptedException e) {
+					ProgressBar.error();
+					logger.error(e.toString());
+				}
+			
+			} catch (HttpRequestException e) {
+				ProgressBar.error();
 				logger.error(e.toString());
-			}
+				break loop;
+			} 
 
 		} while (true);
 
@@ -106,21 +117,27 @@ public class GentleTripleGrabber {
 		}
 	}
 
-	private int getListSize(final String url) throws HttpRequestException {
-		HttpURLConnection connection = GentleUtils.getHttpURLConnection(url);
-		return new OAIPMHtypeWrapper(GentleUtils.unmarshalOAIPMHtype(connection, url)).listSize();
+	private int getListSize(final String url) {
+		HttpURLConnection connection;
+		try {
+			connection = GentleUtils.getHttpURLConnection(url);
+			return new OAIPMHtypeWrapper(GentleUtils.unmarshalOAIPMHtype(connection, url)).listSize();
+		} catch (HttpRequestException e) {
+			logger.error(e.toString());
+		}
+		return 0;
 	}
 
 	private boolean nullOrEmptyRecords(List<RecordType> records) {
 		return records == null || records.isEmpty();
 	}
 
-	private Runnable writeObject(File parent, final String endpoint, final Set<?> data, final int index) {
+	private Runnable writeObject(File parent, Endpoint endpoint, final Set<?> data, final int index) {
 		return new Runnable() {
 			@Override
 			public void run() {
 				try (ObjectOutputStream oos = new ObjectOutputStream(
-						new FileOutputStream(new File(parent, endpoint + "_" + index + ".kor")))) {
+						new FileOutputStream(new File(parent, endpoint.name() + "_" + index + ".kor")))) {
 					oos.writeObject(data);
 				} catch (IOException e) {
 					logger.error(e.toString());
@@ -129,14 +146,13 @@ public class GentleTripleGrabber {
 		};
 	}
 
-	@SuppressWarnings("unused")
-	private Runnable saveXml(final String url, int index, Endpoint endpoint) {
+	private Runnable writeXml(final String url, int index, Endpoint endpoint, File parent) {
 		return new Runnable() {
 			@Override
 			public void run() {
 				try (Scanner scanner = new Scanner(new URL(url).openStream());
 						BufferedWriter writer = new BufferedWriter(
-								new FileWriter(new File(new File("/tmp"), endpoint.name() + "_" + index + ".xml")))) {
+								new FileWriter(new File(parent, endpoint.name() + "_" + index + ".xml")))) {
 					while (scanner.hasNext()) {
 						writer.write(scanner.nextLine());
 					}
