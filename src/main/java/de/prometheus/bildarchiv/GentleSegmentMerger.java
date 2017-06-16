@@ -57,7 +57,8 @@ public class GentleSegmentMerger {
 		System.setProperty("apiKey", properties.getProperty("apiKey"));
 		System.setProperty("baseUrl", properties.getProperty("baseUrl"));
 		
-		GentleSegmentMerger merger = new GentleSegmentMerger("/Users/matana/Documents/mars/workspace/ffm-import");
+		//GentleSegmentMerger merger = new GentleSegmentMerger("/Users/matana/Documents/mars/workspace/ffm-import");
+		GentleSegmentMerger merger = new GentleSegmentMerger("/tmp");
 		merger.mergeEntitiesAndRelationships();
 	}
 
@@ -69,7 +70,7 @@ public class GentleSegmentMerger {
 			logger.info("Merging endpoints 'relationships' and 'entities' ...");
 		}
 		
-		RecordTypeWrapper entityRecords = new RecordTypeWrapper(getRecords(new File(dataDirectory, "ENTITIES/")));
+		RecordTypeWrapper entityRecords = new RecordTypeWrapper(getRecords(new File(dataDirectory, "ENTITIES/")), Endpoint.ENTITIES);
 		
 		Set<Entity> entities = entityRecords.getEntities();
 		
@@ -77,17 +78,16 @@ public class GentleSegmentMerger {
 			logger.info("... counting " + entities.size() + " entities");
 		}
 		
-		RecordTypeWrapper relRecords = new RecordTypeWrapper(getRecords(new File(dataDirectory, "RELATIONSHIPS/")));
+		List<Entity> sortedEntities = new ArrayList<>(entities);
+		Collections.sort(sortedEntities);
 		
+		RecordTypeWrapper relRecords = new RecordTypeWrapper(getRecords(new File(dataDirectory, "RELATIONSHIPS/")), Endpoint.RELATIONSHIPS);
 		Set<Relationship> relationships = relRecords.getRelationships();
 		
 		if (logger.isInfoEnabled()) {
 			logger.info("... counting " + relationships.size() + " relationships");
 		}
 
-		List<Entity> sortedEntities = new ArrayList<>(entities);
-		Collections.sort(sortedEntities);
-		
 		Set<String> notRetrieved = new HashSet<>();
 		Set<ExtendedRelationship> xtendedRelationships = new HashSet<>();
 
@@ -96,6 +96,7 @@ public class GentleSegmentMerger {
 			ExtendedRelationship xtendedRelationship = new ExtendedRelationship(relationship);
 
 			Entity fromEntity = find(relationship.getFrom(), sortedEntities);
+			
 			if (fromEntity != null) {
 				xtendedRelationship.setFrom(fromEntity);
 			} else {
@@ -133,6 +134,10 @@ public class GentleSegmentMerger {
 		
 		File[] files = getFiles(directory, ".kor");
 		
+		if(logger.isInfoEnabled()) {
+			logger.info("Reading objects " + files.length + " from " + directory.getAbsolutePath());
+		}
+		
 		Set<RecordType> records = new HashSet<>();
 		
 		for (File file : files) {
@@ -156,7 +161,6 @@ public class GentleSegmentMerger {
 				return pathname.getName().endsWith(suffix);
 			
 			}
-			
 		});
 		
 		return files;
@@ -191,6 +195,7 @@ public class GentleSegmentMerger {
 
 			List<Entity> missing = new ArrayList<>(submit.get());
 			Collections.sort(missing);
+			
 			for (ExtendedRelationship extendedRelationship : extendedRelsSet) {
 
 				Entity fromEntity = find(extendedRelationship.getFrom().getId(), missing);
