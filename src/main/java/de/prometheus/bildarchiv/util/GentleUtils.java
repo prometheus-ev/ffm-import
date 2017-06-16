@@ -175,10 +175,6 @@ public final class GentleUtils {
 		marshaller.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, true);
 		marshaller.marshal(element, new File(directory, fileName));
 
-		if (logger.isInfoEnabled()) {
-			logger.info("Creating extended relationship xml file " + fileName);
-		}
-
 	}
 
 	/**
