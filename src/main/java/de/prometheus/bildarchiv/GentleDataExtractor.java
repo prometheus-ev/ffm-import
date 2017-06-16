@@ -1,15 +1,18 @@
 package de.prometheus.bildarchiv;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Properties;
 import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import javax.xml.bind.JAXBException;
+import javax.xml.bind.PropertyException;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -68,6 +71,24 @@ public class GentleDataExtractor {
 	private transient Set<ExtendedRelationship> schuelerInVon;
 	private transient Set<ExtendedRelationship> auftraggeberVonWerk;
 	private transient Set<ExtendedRelationship> ausstellungskatalogZu;
+	
+	
+	public static void main(String[] args) throws PropertyException, FileNotFoundException, JAXBException {
+		
+		File log4jXml = new File("conf/", "log4j2.xml");
+		System.setProperty("log4j.configurationFile", log4jXml.getAbsolutePath());
+		
+		File endpointProperties = new File("conf/", "endpoint.properties");
+		Properties properties = GentleUtils.getProperties(endpointProperties);
+		System.setProperty("apiKey", properties.getProperty("apiKey"));
+		System.setProperty("baseUrl", properties.getProperty("baseUrl"));
+		
+		GentleSegmentMerger merger = new GentleSegmentMerger("/tmp");
+		Set<ExtendedRelationship> relationships = merger.mergeEntitiesAndRelationships();
+		
+		GentleDataExtractor exctractor = new GentleDataExtractor(relationships);
+		exctractor.extractData();
+	}
 
 	public GentleDataExtractor(Set<ExtendedRelationship> relationships) {
 
@@ -102,9 +123,10 @@ public class GentleDataExtractor {
 		this.ausstellungskatalogZu = filterRelationships(relationships, Relations.AUSSTELLUNGSKATALOG_ZU);
 
 		if (logger.isInfoEnabled()) {
-
+			
+			logger.info("Filtering finished!");
+			
 			logger.info("bilddateiZuWerk :: " + bilddateiZuWerk.size());
-			logger.info("Filtering relationships done!");
 			logger.info("befindetSichIn :: " + befindetSichIn.size());
 			logger.info("hatGeschaffen :: " + hatGeschaffen.size());
 			logger.info("basisdatenZumWerkAus :: " + basisdatenZumWerkAus.size());
@@ -212,7 +234,12 @@ public class GentleDataExtractor {
 
 		}
 
-		GentleUtils.finalExport(works, extendedRelsFile.getParentFile());
+		if(bilddateiZuWerk.isEmpty()) {
+			logger.info("No Relationships for (" + Relations.BILDDATEI_ZU_WERK + ") present... ");
+		} else {
+			GentleUtils.finalExport(works, extendedRelsFile.getParentFile());
+		}
+		
 	}
 
 	/**
@@ -373,9 +400,9 @@ public class GentleDataExtractor {
 
 			List<Person> photographers = new ArrayList<>();
 
-			persons.forEach(p -> {
+			persons.forEach(x -> {
 
-				Person photographer = getPersonBranch(p, 0);
+				Person photographer = getPersonBranch(x, 0);
 				photographers.add(photographer);
 
 			});
