@@ -65,9 +65,9 @@ public class GentleTripleGrabber {
 		loop:do {
 
 			try {
-				
+
 				HttpURLConnection connection = GentleUtils.getHttpURLConnection(url);
-				
+
 				OAIPMHtypeWrapper oaiWrapper = new OAIPMHtypeWrapper(GentleUtils.unmarshalOAIPMHtype(connection, url));
 
 				resumptionToken = oaiWrapper.getResumptionToken();
@@ -92,13 +92,18 @@ public class GentleTripleGrabber {
 					ProgressBar.error();
 					logger.error(e.toString());
 				}
-			
+
 			} catch (HttpRequestException e) {
 				ProgressBar.error();
 				logger.error(e.toString());
 				// break loop;
-				Thread.sleep(5000); // some cool down time
-			} 
+        try {
+				  Thread.sleep(5000); // some cool down time
+        } catch (InterruptedException err) {
+          ProgressBar.error();
+          logger.error(err.toString());
+        }
+			}
 
 		} while (true);
 
