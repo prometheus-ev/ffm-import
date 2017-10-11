@@ -71,7 +71,7 @@ public class GentleTripleGrabber {
 				OAIPMHtypeWrapper oaiWrapper = new OAIPMHtypeWrapper(GentleUtils.unmarshalOAIPMHtype(connection, url));
 
 				resumptionToken = oaiWrapper.getResumptionToken();
-				if (resumptionToken == null || resumptionToken.getValue() == null) {
+				if (resumptionToken == null || resumptionToken.getValue() == null || resumptionToken.getValue().equals("")) {
 					break loop;
 				}
 
@@ -96,7 +96,8 @@ public class GentleTripleGrabber {
 			} catch (HttpRequestException e) {
 				ProgressBar.error();
 				logger.error(e.toString());
-				break loop;
+				// break loop;
+				Thread.sleep(5000); // some cool down time
 			} 
 
 		} while (true);
