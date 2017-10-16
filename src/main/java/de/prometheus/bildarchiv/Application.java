@@ -76,7 +76,7 @@ public class Application {
 			GentleSegmentMerger gentleSegmentMerger = new GentleSegmentMerger(dataDirectory);
 			Set<ExtendedRelationship> xtendedRelationships = gentleSegmentMerger.mergeEntitiesAndRelationships();
 
-			GentleDataExtractor gentleDataExtractor = new GentleDataExtractor(xtendedRelationships);
+			GentleDataExtractor gentleDataExtractor = new GentleDataExtractor(xtendedRelationships, dataDirectory);
 			gentleDataExtractor.extractData();
 
 		} catch (JAXBException e) {
@@ -90,10 +90,10 @@ public class Application {
 		} finally {
 			
 			// Delete temporary created files on exit
-			File tmpEnt = new File(dataDirectory, Endpoint.ENTITIES.name());
-			File tmpRel = new File(dataDirectory, Endpoint.RELATIONSHIPS.name());
-			tmpEnt.deleteOnExit();
-			tmpRel.deleteOnExit();
+			// File tmpEnt = new File(dataDirectory, Endpoint.ENTITIES.name());
+			// File tmpRel = new File(dataDirectory, Endpoint.RELATIONSHIPS.name());
+			// tmpEnt.deleteOnExit();
+			// tmpRel.deleteOnExit();
 			
 		}
 	}

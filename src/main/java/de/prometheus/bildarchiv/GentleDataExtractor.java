@@ -2,6 +2,7 @@ package de.prometheus.bildarchiv;
 
 import java.io.File;
 import java.io.FileNotFoundException;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
@@ -14,8 +15,16 @@ import java.util.stream.Collectors;
 import javax.xml.bind.JAXBException;
 import javax.xml.bind.PropertyException;
 
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.CommandLineParser;
+import org.apache.commons.cli.DefaultParser;
+import org.apache.commons.cli.Option;
+import org.apache.commons.cli.Options;
+import org.apache.commons.cli.ParseException;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+
 import org.openarchives.model.Entity;
 
 import de.prometheus.bildarchiv.model.Exhibition;
@@ -44,9 +53,9 @@ public class GentleDataExtractor {
 
 	private static final int DELIMITER = 1;
 
-	private Logger logger = LogManager.getLogger(GentleDataExtractor.class);
+	private static Logger logger;
 
-	private File extendedRelsFile;
+	private File dataDirectory;
 
 	private transient Set<ExtendedRelationship> befindetSichIn;
 	private transient Set<ExtendedRelationship> hatGeschaffen;
@@ -74,24 +83,45 @@ public class GentleDataExtractor {
 	
 	
 	public static void main(String[] args) throws PropertyException, FileNotFoundException, JAXBException {
-		
-		File log4jXml = new File("conf/", "log4j2.xml");
-		System.setProperty("log4j.configurationFile", log4jXml.getAbsolutePath());
-		
-		File endpointProperties = new File("conf/", "endpoint.properties");
-		Properties properties = GentleUtils.getProperties(endpointProperties);
-		System.setProperty("apiKey", properties.getProperty("apiKey"));
-		System.setProperty("baseUrl", properties.getProperty("baseUrl"));
-		
-		GentleSegmentMerger merger = new GentleSegmentMerger("/tmp");
-		Set<ExtendedRelationship> relationships = merger.mergeEntitiesAndRelationships();
-		
-		GentleDataExtractor exctractor = new GentleDataExtractor(relationships);
-		exctractor.extractData();
+		Options options = new Options();
+		Option configOption = new Option("c", "config", true, "The configuration directory");
+		configOption.setRequired(true);
+		Option destinationOption = new Option("d", "data", true, "The data directory contains temporary and output files");
+		destinationOption.setRequired(false);
+		options.addOption(configOption);
+		options.addOption(destinationOption);
+
+		try {
+			CommandLineParser parser = new DefaultParser();
+			CommandLine cmd = parser.parse(options, args);
+			
+			File configDir = new File(cmd.getOptionValue("c"));
+
+			// Logger configuration
+			File log4jXml = new File(configDir, "log4j2.xml");
+			System.setProperty("log4j.configurationFile", log4jXml.getAbsolutePath());
+			logger = LogManager.getLogger(GentleDataExtractor.class);
+
+			String dataDirectoryPath = "/tmp";
+			if(cmd.getOptionValue("d") != null) {
+				dataDirectoryPath = cmd.getOptionValue("d");
+			}
+
+			GentleSegmentMerger merger = new GentleSegmentMerger(dataDirectoryPath);
+			Set<ExtendedRelationship> relationships = merger.mergeEntitiesAndRelationships();
+			
+			GentleDataExtractor exctractor = new GentleDataExtractor(relationships, dataDirectoryPath);
+			exctractor.extractData();
+		} catch (ParseException e) {
+			logger.error(e.toString());
+		}
 	}
+	
 
-	public GentleDataExtractor(Set<ExtendedRelationship> relationships) {
+	public GentleDataExtractor(Set<ExtendedRelationship> relationships, String dataDirectoryPath) {
 
+		dataDirectory = new File(dataDirectoryPath);
+		logger = LogManager.getLogger(GentleDataExtractor.class);
 		init(relationships);
 
 	}
@@ -162,7 +192,6 @@ public class GentleDataExtractor {
 		final Set<Work> works = new HashSet<>();
 
 		for (ExtendedRelationship relationship : bilddateiZuWerk) {
-
 			final Entity mediumEntity = relationship.getFrom();
 			final Entity workEntity = relationship.getTo();
 
@@ -237,7 +266,7 @@ public class GentleDataExtractor {
 		if(bilddateiZuWerk.isEmpty()) {
 			logger.info("No Relationships for (" + Relations.BILDDATEI_ZU_WERK + ") present... ");
 		} else {
-			GentleUtils.finalExport(works, extendedRelsFile.getParentFile());
+			GentleUtils.finalExport(works, dataDirectory);
 		}
 		
 	}
