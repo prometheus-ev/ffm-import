@@ -11,6 +11,7 @@ import org.openarchives.model.OAIPMHtype;
 import org.openarchives.model.RecordType;
 
 import de.prometheus.bildarchiv.exception.HttpRequestException;
+import de.prometheus.bildarchiv.exception.HttpURLConnectionException;
 
 /**
  * @author matana
@@ -68,7 +69,7 @@ public interface Relations {
 	 * @throws JAXBException
 	 * @throws HttpRequestException 
 	 */
-	public default void printRelations() throws IOException, JAXBException, HttpRequestException {
+	public default void printRelations() throws IOException, JAXBException, HttpRequestException, HttpURLConnectionException {
 		String url = Endpoint.RELATIONS.listRecords(null);
 		HttpURLConnection c = GentleUtils.getHttpURLConnection(url);
 		JAXBElement<OAIPMHtype> oai = GentleUtils.unmarshalOAIPMHtype(c, null);
@@ -77,5 +78,4 @@ public interface Relations {
 			System.out.println(recordType.getMetadata().getRelation());
 		}
 	}
-
 }

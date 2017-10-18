@@ -31,6 +31,7 @@ import org.openarchives.model.OAIPMHtype;
 import org.openarchives.model.ObjectFactory;
 
 import de.prometheus.bildarchiv.exception.HttpRequestException;
+import de.prometheus.bildarchiv.exception.HttpURLConnectionException;
 import de.prometheus.bildarchiv.model.ExtendedRelationship;
 import de.prometheus.bildarchiv.model.ExtendedRelationshipWrapper;
 import de.prometheus.bildarchiv.model.FFMConedakorSource;
@@ -55,7 +56,7 @@ public final class GentleUtils {
 	 * @throws JAXBException
 	 * @throws IOException
 	 */
-	public static JAXBElement<OAIPMHtype> unmarshalOAIPMHtype(HttpURLConnection connection, final String url) throws HttpRequestException {
+	public static JAXBElement<OAIPMHtype> unmarshalOAIPMHtype(HttpURLConnection connection, final String url) throws HttpRequestException, HttpURLConnectionException {
 
 		HttpURLConnection httpConnection = connection;
 
@@ -102,31 +103,33 @@ public final class GentleUtils {
 	 * @throws HttpRequestException
 	 * @throws IOException
 	 */
-	public static HttpURLConnection getHttpURLConnection(final String url) throws HttpRequestException {
+	public static HttpURLConnection getHttpURLConnection(final String url) throws HttpRequestException, HttpURLConnectionException {
 
-		try {
+		HttpURLConnection connection;
 
-			HttpURLConnection connection = (HttpURLConnection) new URL(url).openConnection();
-			connection.setRequestMethod("GET");
-			connection.setConnectTimeout(10000);
-			connection.setReadTimeout(10000);
-			connection.connect();
+		// try a maximum of three times to establish a connection
+		for (int retries = 0; retries < 3; retries++) {
+			try {
+				connection = (HttpURLConnection) new URL(url).openConnection();
+				connection.setRequestMethod("GET");
+				connection.setConnectTimeout(10000);
+				connection.setReadTimeout(10000);
+				connection.connect();
+				
+				int code = connection.getResponseCode();
 
-			int code = connection.getResponseCode();
+				if (code == 200) {
+					return connection;
+				} else {
+					throw new HttpRequestException("Response Code " + code + " url=" +url);
+				}
 
-			if (code == 200) {
-				return connection;
-			} else if (code == 400) {
-				return null;
-			} else {
-				throw new HttpRequestException("Response Code " + code + " url=" +url);
+			} catch (IOException e) {
+				logger.error("Line 126 " + e.toString());
 			}
-
-		} catch (IOException e) {
-			logger.error("Line 126 " + e.toString());
 		}
-
-		return null;
+		// attempt failed to establish connection
+		throw new HttpURLConnectionException("Connection to url " +  url + " could not be established.");
 	}
 
 	/**

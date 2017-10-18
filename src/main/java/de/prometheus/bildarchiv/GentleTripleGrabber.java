@@ -24,6 +24,7 @@ import org.openarchives.model.ResumptionTokenType;
 
 import de.prometheus.bildarchiv.exception.HttpRequestException;
 import de.prometheus.bildarchiv.exception.NoSuchEndpointException;
+import de.prometheus.bildarchiv.exception.HttpURLConnectionException;
 import de.prometheus.bildarchiv.model.OAIPMHtypeWrapper;
 import de.prometheus.bildarchiv.util.Endpoint;
 import de.prometheus.bildarchiv.util.GentleUtils;
@@ -39,7 +40,7 @@ public class GentleTripleGrabber {
 		this.dataDirectory = dataDirectory;
 	}
 
-	public void listRecords(Endpoint endpoint) throws NoSuchEndpointException {
+	public void listRecords(Endpoint endpoint) throws NoSuchEndpointException, HttpURLConnectionException {
 
 		ExecutorService executor = Executors.newFixedThreadPool(1);
 		AtomicInteger index = new AtomicInteger();
@@ -97,12 +98,12 @@ public class GentleTripleGrabber {
 				ProgressBar.error();
 				logger.error(e.toString());
 				// break loop;
-        try {
-				  Thread.sleep(5000); // some cool down time
-        } catch (InterruptedException err) {
-          ProgressBar.error();
-          logger.error(err.toString());
-        }
+				try {
+					Thread.sleep(5000); // some cool down time
+				} catch (InterruptedException err) {
+					ProgressBar.error();
+					logger.error(err.toString());
+				}
 			}
 
 		} while (true);
@@ -131,6 +132,10 @@ public class GentleTripleGrabber {
 		} catch (HttpRequestException e) {
 			logger.error(e.toString());
 		}
+		catch (HttpURLConnectionException e){
+			logger.error(e.toString());
+		}
+
 		return 0;
 	}
 
