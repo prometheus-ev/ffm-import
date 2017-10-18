@@ -45,6 +45,8 @@ public class Application {
 		options.addOption(configOption);
 		options.addOption(destinationOption);
 		
+		String dataDirectory = "/tmp";
+		
 		try {
 			CommandLineParser parser = new DefaultParser();
 			CommandLine cmd = parser.parse(options, args);
@@ -55,9 +57,7 @@ public class Application {
 			File log4jXml = new File(configDir, "log4j2.xml");
 			System.setProperty("log4j.configurationFile", log4jXml.getAbsolutePath());
 			logger = LogManager.getLogger(GentleTripleGrabber.class);
-			
-			String dataDirectory = "/tmp";
-			
+								
 			// ConedaKor configuration
 			File endpointProperties = new File(configDir, "endpoint.properties");
 			Properties properties = GentleUtils.getProperties(endpointProperties);
@@ -93,11 +93,11 @@ public class Application {
 		} catch (NoSuchEndpointException e) {
 			logger.error(e.toString());
 		} finally {
-			// Delete temporary created files on exit
-			// File tmpEnt = new File(dataDirectory, Endpoint.ENTITIES.name());
-			// File tmpRel = new File(dataDirectory, Endpoint.RELATIONSHIPS.name());
-			// tmpEnt.deleteOnExit();
-			// tmpRel.deleteOnExit();
+			//Delete temporary created files on exit
+			File tmpEnt = new File(dataDirectory, Endpoint.ENTITIES.name());
+			File tmpRel = new File(dataDirectory, Endpoint.RELATIONSHIPS.name());
+			tmpEnt.deleteOnExit();
+			tmpRel.deleteOnExit();
 		}
 	}
 
