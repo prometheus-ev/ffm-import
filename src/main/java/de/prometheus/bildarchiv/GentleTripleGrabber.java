@@ -52,7 +52,7 @@ public class GentleTripleGrabber {
 		int recordCount = 0;
 
 		long requestDuration = System.currentTimeMillis();
-		int listSize = getListSize(url);
+		int listSize = getListSize(url); // only estimation; total list size may change during harvesting process
 		requestDuration = System.currentTimeMillis() - requestDuration;
 
 		if (logger.isInfoEnabled()) {
@@ -71,11 +71,6 @@ public class GentleTripleGrabber {
 
 				OAIPMHtypeWrapper oaiWrapper = new OAIPMHtypeWrapper(GentleUtils.unmarshalOAIPMHtype(connection, url));
 
-				resumptionToken = oaiWrapper.getResumptionToken();
-				if (resumptionToken == null || resumptionToken.getValue() == null || resumptionToken.getValue().equals("")) {
-					break loop;
-				}
-
 				List<RecordType> records = oaiWrapper.getRecords();
 				if (!nullOrEmptyRecords(records)) {
 					int indexPos = index.incrementAndGet();
@@ -84,9 +79,14 @@ public class GentleTripleGrabber {
 					recordCount += records.size();
 					progress.increment(records.size());
 				}
-
+				
+				// only break after write operation
+				resumptionToken = oaiWrapper.getResumptionToken();
+				listSize = resumptionToken.getCompleteListSize().intValue(); // total list size may change during harvesting process
+				if (resumptionToken.getValue().equals("")) { // specification conformity demands presence of resumptionToken
+					break loop;
+				}
 				url = endpoint.listRecords(resumptionToken.getValue());
-
 				try {
 					Thread.sleep(300); // the gentleness :-)
 				} catch (InterruptedException e) {

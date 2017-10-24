@@ -256,17 +256,17 @@ public class GentleDataExtractor {
 			// collect work object
 			works.add(work);
 
-			if (logger.isInfoEnabled()) {
-				logger.info("Added new work object '" + work.getTitle());
-			}
+//			if (logger.isInfoEnabled()) {
+//				logger.info("Added new work object '" + work.getTitle()); // verbose
+//			}
 
 		}
 
-		if(bilddateiZuWerk.isEmpty()) {
-			logger.info("No Relationships for (" + Relations.BILDDATEI_ZU_WERK + ") present... ");
-		} else {
+//		if(bilddateiZuWerk.isEmpty()) {
+//			logger.info("No Relationships for (" + Relations.BILDDATEI_ZU_WERK + ") present... ");
+//		} else {
 			GentleUtils.finalExport(works, dataDirectory);
-		}
+//		}
 		
 	}
 
