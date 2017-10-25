@@ -8,8 +8,10 @@ import java.io.IOException;
 import java.io.ObjectOutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Scanner;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
@@ -40,7 +42,9 @@ public class GentleTripleGrabber {
 		this.dataDirectory = dataDirectory;
 	}
 
-	public void listRecords(Endpoint endpoint) throws NoSuchEndpointException, HttpURLConnectionException {
+	public void listRecords(Endpoint endpoint, Map<String,String> optionalArguments) throws NoSuchEndpointException, HttpURLConnectionException {
+		Map<String,String> arguments = new HashMap<String,String>();
+		arguments.putAll(optionalArguments);
 
 		ExecutorService executor = Executors.newFixedThreadPool(1);
 		AtomicInteger index = new AtomicInteger();
@@ -48,9 +52,9 @@ public class GentleTripleGrabber {
 		parent.mkdirs();
 
 		ResumptionTokenType resumptionToken;
-		String url = endpoint.listRecords(null);
+		String url = endpoint.getListRecordsHttpRequestURL(arguments);
+		
 		int recordCount = 0;
-
 		long requestDuration = System.currentTimeMillis();
 		int listSize = getListSize(url); // only estimation; total list size may change during harvesting process
 		requestDuration = System.currentTimeMillis() - requestDuration;
@@ -85,8 +89,10 @@ public class GentleTripleGrabber {
 				listSize = resumptionToken.getCompleteListSize().intValue(); // total list size may change during harvesting process
 				if (resumptionToken.getValue().equals("")) { // specification conformity demands presence of resumptionToken
 					break loop;
+				} else {
+					arguments.put("resumptionToken", resumptionToken.getValue());
+					url = endpoint.getListRecordsHttpRequestURL(arguments);
 				}
-				url = endpoint.listRecords(resumptionToken.getValue());
 				try {
 					Thread.sleep(300); // the gentleness :-)
 				} catch (InterruptedException e) {

@@ -49,9 +49,18 @@ public enum Endpoint {
 		return baseUrl + endpoint + listIdentifiers + prefix + apiKey + resumptionToken + token;
 	}
 	
-	public String getlistIdentifiersHttpRequestURL(Map<String, String> optionalArguments) {
+	public String getListIdentifiersHttpRequestURL(Map<String, String> optionalArguments) {
 		Map<String,String> arguments = new HashMap<String, String>();
 		arguments.put("verb", "ListIdentifiers");
+		arguments.put("metadataPrefix", "kor");
+		arguments.put("apiKey", apiKey.replace("api_key=", "")); //ugly fix
+		arguments.putAll(optionalArguments); //TODO resumptionToken should be exclusive argument
+		return buildHttpRequestURL(arguments);
+	}
+	
+	public String getListRecordsHttpRequestURL(Map<String, String> optionalArguments) {
+		Map<String,String> arguments = new HashMap<String, String>();
+		arguments.put("verb", "ListRecords");
 		arguments.put("metadataPrefix", "kor");
 		arguments.put("apiKey", apiKey.replace("api_key=", "")); //ugly fix
 		arguments.putAll(optionalArguments); //TODO resumptionToken should be exclusive argument

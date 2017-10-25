@@ -2,6 +2,8 @@ package de.prometheus.bildarchiv;
 
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 
@@ -69,9 +71,14 @@ public class Application {
 			}
 			
 			GentleTripleGrabber gentleTripleGrabber = new GentleTripleGrabber(dataDirectory);
+			
 			try {
-				gentleTripleGrabber.listRecords(Endpoint.ENTITIES);
-				gentleTripleGrabber.listRecords(Endpoint.RELATIONSHIPS);
+				Map<String,String> optionalArguments = new HashMap<String, String>();
+				//optionalArguments.put("from", "2017-10-01T00:00:00Z");
+				gentleTripleGrabber.listRecords(Endpoint.ENTITIES, optionalArguments);
+				optionalArguments = new HashMap<String, String>();
+				//optionalArguments.put("from", "2017-10-01T00:00:00Z");
+				gentleTripleGrabber.listRecords(Endpoint.RELATIONSHIPS, optionalArguments);
 			}
 			catch (HttpURLConnectionException e){
 				logger.error(e.toString());

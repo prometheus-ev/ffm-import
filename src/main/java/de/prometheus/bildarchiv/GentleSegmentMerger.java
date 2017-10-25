@@ -114,7 +114,7 @@ public class GentleSegmentMerger {
 
 		}
 
-		if (!notRetrieved.isEmpty()) {
+		if (!notRetrieved.isEmpty()) { //only on case of selective/incomplete harvest
 			getMissingRecords(notRetrieved, xtendedRelationships);
 		}
 
