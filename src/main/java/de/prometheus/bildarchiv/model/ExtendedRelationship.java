@@ -55,11 +55,11 @@ public class ExtendedRelationship implements Serializable {
 
 		this.relation = new Relation(relationship);
 
-		setProperties(relationship);
+		initializeProperties(relationship);
 
 	}
 
-	private void setProperties(Relationship relationship) {
+	private void initializeProperties(Relationship relationship) {
 
 		List<Property> property = relationship.getProperties().getProperty();
 
@@ -67,6 +67,14 @@ public class ExtendedRelationship implements Serializable {
 			properties.add(prop.getValue());
 		}
 
+	}
+	
+	public List<String> getProperties() {
+		return properties;
+	}
+
+	public void setProperties(List<String> properties) {
+		this.properties = properties;
 	}
 
 	public String getId() {

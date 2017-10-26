@@ -25,6 +25,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import org.openarchives.model.Entity;
+import org.openarchives.model.Entity.Properties.Property;
 
 import de.prometheus.bildarchiv.model.Exhibition;
 import de.prometheus.bildarchiv.model.ExtendedRelationship;
@@ -405,11 +406,17 @@ public class GentleDataExtractor {
 
 		Predicate<ExtendedRelationship> predicateTo = getPredicateTo(identifier);
 		
-		List<Entity> images = filterFrom(bilddateiZuWerk, predicateTo);
+		List<ExtendedRelationship> fromMediumRelationships = filterRelationshipsFrom(bilddateiZuWerk, predicateTo);
+		
+		//List<Entity> images = filterFrom(bilddateiZuWerk, predicateTo);
 
 		List<Medium> mediums = new ArrayList<>();
 
-		for (Entity image : images) {
+		//for (Entity image : images) {
+		
+		for (ExtendedRelationship fromMediumRelationship : fromMediumRelationships) {
+			
+			Entity image = fromMediumRelationship.getFrom();
 
 			if (image.getImagePath() == null) {
 				continue;
@@ -436,6 +443,15 @@ public class GentleDataExtractor {
 			});
 
 			medium.setPhotographers(photographers);
+			
+			// add bilddateiZuWerk relationship's properties to medium
+			for(String property: fromMediumRelationship.getProperties()) {
+				Property titleProperty = new Entity.Properties.Property();
+				titleProperty.setName("title");
+				titleProperty.setValue(property);
+				medium.getProperties().getProperty().add(titleProperty);
+			}
+			
 			mediums.add(medium);
 		}
 
@@ -517,6 +533,10 @@ public class GentleDataExtractor {
 
 	private List<Entity> filterFrom(Collection<ExtendedRelationship> relations, Predicate<ExtendedRelationship> predicate) {
 		return relations.stream().filter(predicate).map(ExtendedRelationship::getFrom).collect(Collectors.toList());
+	}
+	
+	private List<ExtendedRelationship> filterRelationshipsFrom(Collection<ExtendedRelationship> relations, Predicate<ExtendedRelationship> predicate) {
+		return relations.stream().filter(predicate).collect(Collectors.toList());
 	}
 
 	private List<Entity> filterTo(Collection<ExtendedRelationship> relations, Predicate<ExtendedRelationship> predicate) {
