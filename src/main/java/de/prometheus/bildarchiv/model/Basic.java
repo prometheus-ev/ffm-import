@@ -29,7 +29,6 @@ public class Basic implements Serializable {
 	private Properties properties;
 	private Fields fields;
 	private String creator;
-	private String site; // Standort
 	
 	
 	public Basic() { 
@@ -152,14 +151,6 @@ public class Basic implements Serializable {
 
 	public void setCreator(String creator) {
 		this.creator = creator;
-	}
-
-	public String getSite() {
-		return site;
-	}
-
-	public void setSite(String site) {
-		this.site = site;
 	}
 
 	@Override

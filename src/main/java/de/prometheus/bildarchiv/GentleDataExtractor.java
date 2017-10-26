@@ -80,6 +80,7 @@ public class GentleDataExtractor {
 	private transient Set<ExtendedRelationship> schuelerInVon;
 	private transient Set<ExtendedRelationship> auftraggeberVonWerk;
 	private transient Set<ExtendedRelationship> ausstellungskatalogZu;
+	private transient Set<ExtendedRelationship> standortIn;
 	
 	
 	public static void main(String[] args) throws PropertyException, FileNotFoundException, JAXBException {
@@ -151,6 +152,7 @@ public class GentleDataExtractor {
 		this.schuelerInVon = filterRelationships(relationships, Relations.SCHUELERIN_VON);
 		this.auftraggeberVonWerk = filterRelationships(relationships, Relations.AUFTRAGGEBER_VON_WERK);
 		this.ausstellungskatalogZu = filterRelationships(relationships, Relations.AUSSTELLUNGSKATALOG_ZU);
+		this.standortIn = filterRelationships(relationships, Relations.STANDORT_IN);
 
 		if (logger.isInfoEnabled()) {
 			
@@ -179,6 +181,7 @@ public class GentleDataExtractor {
 			logger.info("schuelerInVon :: " + schuelerInVon.size());
 			logger.info("auftraggeberVonWerk :: " + auftraggeberVonWerk.size());
 			logger.info("ausstellungskatalogZu :: " + ausstellungskatalogZu.size());
+			logger.info("standortIn :: " + standortIn.size());
 
 		}
 	}
@@ -211,7 +214,8 @@ public class GentleDataExtractor {
 			}
 
 			// #1
-			List<Medium> mediumObjects = getMediumBranch(identifier);
+			//List<Medium> mediumObjects = getMediumBranch(identifier);
+			List<Medium> mediumObjects = getMediumBranch(identifier, relationship);
 			work.setMediums(mediumObjects);
 
 			// #2
@@ -253,6 +257,14 @@ public class GentleDataExtractor {
 			if (!portrayals.isEmpty()) {
 				work.setPortrayal(portrayals.get(0));
 			}
+			
+			// #10 (Werk) Standort in (Ort)
+			List<Place> sites = new ArrayList<Place>();
+			List<Entity> places = filterTo(standortIn, predicateFrom);
+			for (Entity place: places) {
+				sites.add(new Place(place));
+			}
+			work.setSites(sites);
 
 			// collect work object
 			works.add(work);
@@ -402,21 +414,71 @@ public class GentleDataExtractor {
 	 * @param id
 	 * @return List
 	 */
-	public List<Medium> getMediumBranch(final String identifier) {
+//	private List<Medium> getMediumBranch(final String identifier) {
+//
+//		Predicate<ExtendedRelationship> predicateTo = getPredicateTo(identifier);
+//		
+//		List<ExtendedRelationship> fromMediumRelationships = filterRelationshipsFrom(bilddateiZuWerk, predicateTo);
+//		
+//		//List<Entity> images = filterFrom(bilddateiZuWerk, predicateTo);
+//
+//		List<Medium> mediums = new ArrayList<>();
+//
+//		//for (Entity image : images) {
+//		
+//		for (ExtendedRelationship fromMediumRelationship : fromMediumRelationships) {
+//			
+//			Entity image = fromMediumRelationship.getFrom();
+//
+//			if (image.getImagePath() == null) {
+//				continue;
+//			}
+//
+//			Medium medium = new Medium(image);
+//
+//			Predicate<ExtendedRelationship> predicateFrom = getPredicateFrom(image.getId());
+//
+//			List<Entity> rights = filterTo(verwertungsrechtAmFoto, predicateFrom);
+//			List<Entity> persons = filterTo(fotografiertVon, predicateFrom);
+//
+//			if (!rights.isEmpty()) {
+//				medium.setExploitationRight(getInstitutionBranch(rights.get(0)));
+//			}
+//
+//			List<Person> photographers = new ArrayList<>();
+//
+//			persons.forEach(x -> {
+//
+//				Person photographer = getPersonBranch(x, 0);
+//				photographers.add(photographer);
+//
+//			});
+//
+//			medium.setPhotographers(photographers);
+//			
+//			// add bilddateiZuWerk relationship's properties to medium
+//			for(String property: fromMediumRelationship.getProperties()) {
+//				Property titleProperty = new Entity.Properties.Property();
+//				titleProperty.setName("title");
+//				titleProperty.setValue(property);
+//				medium.getProperties().getProperty().add(titleProperty);
+//			}
+//			
+//			mediums.add(medium);
+//		}
+//
+//		return mediums;
+//	}
+	
+	private List<Medium> getMediumBranch(final String identifier, ExtendedRelationship bilddateiZuWerkRelationship) {
 
 		Predicate<ExtendedRelationship> predicateTo = getPredicateTo(identifier);
 		
-		List<ExtendedRelationship> fromMediumRelationships = filterRelationshipsFrom(bilddateiZuWerk, predicateTo);
-		
-		//List<Entity> images = filterFrom(bilddateiZuWerk, predicateTo);
+		List<Entity> images = filterFrom(bilddateiZuWerk, predicateTo);
 
 		List<Medium> mediums = new ArrayList<>();
 
-		//for (Entity image : images) {
-		
-		for (ExtendedRelationship fromMediumRelationship : fromMediumRelationships) {
-			
-			Entity image = fromMediumRelationship.getFrom();
+		for (Entity image : images) {
 
 			if (image.getImagePath() == null) {
 				continue;
@@ -445,7 +507,7 @@ public class GentleDataExtractor {
 			medium.setPhotographers(photographers);
 			
 			// add bilddateiZuWerk relationship's properties to medium
-			for(String property: fromMediumRelationship.getProperties()) {
+			for(String property: bilddateiZuWerkRelationship.getProperties()) {
 				Property titleProperty = new Entity.Properties.Property();
 				titleProperty.setName("title");
 				titleProperty.setValue(property);
@@ -566,7 +628,7 @@ public class GentleDataExtractor {
 	private List<Person> getPersons(final Collection<Entity> entities) {
 		return entities.stream().map(x -> getPersonBranch(x, 0)).collect(Collectors.toList());
 	}
-
+	
 	private Set<ExtendedRelationship> filterRelationships(final Set<ExtendedRelationship> relationships, final String identifier) {
 		return relationships.stream().filter(x -> x.getRelation().getId().equals(identifier)).collect(Collectors.toSet());
 	}

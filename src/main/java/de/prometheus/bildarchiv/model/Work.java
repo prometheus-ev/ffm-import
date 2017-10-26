@@ -26,6 +26,7 @@ public class Work extends Basic implements ToJson {
 	private List<Part> parts;
 	private List<Literature> illustrations;
 	private List<Exhibition> exhibitions;
+	private List<Place> sites;
 
 	public Work() { }
 
@@ -121,13 +122,22 @@ public class Work extends Basic implements ToJson {
 	public void setSubtype(String subtype) {
 		this.subtype = subtype;
 	}
+	
+
+	public List<Place> getSites() {
+		return sites;
+	}
+
+	public void setSites(List<Place> sites) {
+		this.sites = sites;
+	}
 
 	@Override
 	public String toString() {
 		return "Work [subtype=" + subtype + ", mediums=" + mediums + ", creators=" + creators + ", commissioner="
 				+ commissioner + ", portrayal=" + portrayal + ", locatedIn=" + locatedIn + ", connectionsTo="
 				+ connectionsTo + ", parts=" + parts + ", illustrations=" + illustrations + ", exhibitions="
-				+ exhibitions + "]";
+				+ exhibitions + ", sites=" + sites + "]";
 	}
 
 }
