@@ -2,7 +2,6 @@ package de.prometheus.bildarchiv;
 
 import java.io.File;
 import java.io.FileNotFoundException;
-
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
@@ -20,10 +19,8 @@ import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-
 import org.openarchives.model.Entity;
 import org.openarchives.model.Entity.Properties.Property;
 
@@ -198,81 +195,83 @@ public class GentleDataExtractor {
 			final Entity mediumEntity = relationship.getFrom();
 			final Entity workEntity = relationship.getTo();
 
-			if (workEntity == null || mediumEntity == null) {
-				continue;
+			if (workEntity != null && mediumEntity != null) {
+				Work work = new Work(workEntity);
+				if (!works.contains(work)) {
+					String identifier = workEntity.getId();
+					
+					Predicate<ExtendedRelationship> predicateFrom = getPredicateFrom(identifier);
+					Predicate<ExtendedRelationship> predicateTo = getPredicateTo(identifier);
+
+					if (workEntity.getSubType() != null) {
+						work.setSubtype(workEntity.getSubType());
+					}
+
+					// #1
+					List<ExtendedRelationship> bilddateiZuThisWerkRelationships = filterRelationshipsFrom(bilddateiZuWerk, predicateTo);
+					for (ExtendedRelationship bilddateiZuThisWerkRelationship: bilddateiZuThisWerkRelationships) {
+						Medium medium = getMedium(bilddateiZuThisWerkRelationship);
+						if (medium != null) {
+							work.setMedium(medium);
+						}
+					}
+
+					// #2
+					List<Person> creators = getPersons(filterFrom(hatGeschaffen, predicateTo));
+					work.setCreators(creators);
+
+					// #3
+					List<Literature> illustrations = getLiteratures(filterTo(basisdatenZumWerkAus, predicateFrom));
+					work.setIllustrations(illustrations);
+
+					// #4
+					List<Exhibition> exhibitions = getExhibitions(filterFrom(ausgestellteWerke, predicateTo));
+					work.setExhibitions(exhibitions);
+
+					// #5 (Werk) befindet sich in (Institution)
+					List<Entity> institutions = filterTo(befindetSichIn, predicateFrom);
+					if (!institutions.isEmpty()) {
+						Institution institution = getInstitutionBranch(institutions.get(0));
+						work.setLocatedIn(institution);
+					}
+
+					// #6 (Person) ist Auftraggeber von (Werk)
+					List<Entity> commissioners = filterFrom(auftraggeberVonWerk, predicateTo);
+					if (!commissioners.isEmpty()) {
+						Person commissioner = getPersonBranch(commissioners.get(0), 0);
+						work.setCommissioner(commissioner);
+					}
+
+					// #7 (Werk) steht in Verbindung zu (Werk)
+					List<String> connections = getConnections(filterFrom(stehtInVerbindungZu, predicateTo));
+					work.setConnectionsTo(connections);
+
+					// #8 (Werk) ist Teil von (Werk)
+					List<Part> relations = getWorkRelations(filterTo(istTeilVon, predicateFrom));
+					work.setParts(relations);
+
+					// #9 (Werk) stellt dar (Person)
+					List<Person> portrayals = getPersons(filterTo(stelltDar, predicateFrom));
+					if (!portrayals.isEmpty()) {
+						work.setPortrayal(portrayals.get(0));
+					}
+					
+					// #10 (Werk) Standort in (Ort)
+					List<Place> sites = new ArrayList<Place>();
+					List<Entity> places = filterTo(standortIn, predicateFrom);
+					for (Entity place: places) {
+						sites.add(new Place(place));
+					}
+					work.setSites(sites);
+
+					// collect work object
+					works.add(work);
+
+//					if (logger.isInfoEnabled()) {
+//						logger.info("Added new work object '" + work.getTitle()); // verbose
+//					}
+				}
 			}
-
-			Work work = new Work(workEntity);
-			
-			String identifier = workEntity.getId();
-			
-			Predicate<ExtendedRelationship> predicateFrom = getPredicateFrom(identifier);
-			Predicate<ExtendedRelationship> predicateTo = getPredicateTo(identifier);
-
-			if (workEntity.getSubType() != null) {
-				work.setSubtype(workEntity.getSubType());
-			}
-
-			// #1
-			//List<Medium> mediumObjects = getMediumBranch(identifier);
-			List<Medium> mediumObjects = getMediumBranch(identifier, relationship);
-			work.setMediums(mediumObjects);
-
-			// #2
-			List<Person> creators = getPersons(filterFrom(hatGeschaffen, predicateTo));
-			work.setCreators(creators);
-
-			// #3
-			List<Literature> illustrations = getLiteratures(filterTo(basisdatenZumWerkAus, predicateFrom));
-			work.setIllustrations(illustrations);
-
-			// #4
-			List<Exhibition> exhibitions = getExhibitions(filterFrom(ausgestellteWerke, predicateTo));
-			work.setExhibitions(exhibitions);
-
-			// #5 (Werk) befindet sich in (Institution)
-			List<Entity> institutions = filterTo(befindetSichIn, predicateFrom);
-			if (!institutions.isEmpty()) {
-				Institution institution = getInstitutionBranch(institutions.get(0));
-				work.setLocatedIn(institution);
-			}
-
-			// #6 (Person) ist Auftraggeber von (Werk)
-			List<Entity> commissioners = filterFrom(auftraggeberVonWerk, predicateTo);
-			if (!commissioners.isEmpty()) {
-				Person commissioner = getPersonBranch(commissioners.get(0), 0);
-				work.setCommissioner(commissioner);
-			}
-
-			// #7 (Werk) steht in Verbindung zu (Werk)
-			List<String> connections = getConnections(filterFrom(stehtInVerbindungZu, predicateTo));
-			work.setConnectionsTo(connections);
-
-			// #8 (Werk) ist Teil von (Werk)
-			List<Part> relations = getWorkRelations(filterTo(istTeilVon, predicateFrom));
-			work.setParts(relations);
-
-			// #9 (Werk) stellt dar (Person)
-			List<Person> portrayals = getPersons(filterTo(stelltDar, predicateFrom));
-			if (!portrayals.isEmpty()) {
-				work.setPortrayal(portrayals.get(0));
-			}
-			
-			// #10 (Werk) Standort in (Ort)
-			List<Place> sites = new ArrayList<Place>();
-			List<Entity> places = filterTo(standortIn, predicateFrom);
-			for (Entity place: places) {
-				sites.add(new Place(place));
-			}
-			work.setSites(sites);
-
-			// collect work object
-			works.add(work);
-
-//			if (logger.isInfoEnabled()) {
-//				logger.info("Added new work object '" + work.getTitle()); // verbose
-//			}
-
 		}
 
 //		if(bilddateiZuWerk.isEmpty()) {
@@ -407,6 +406,44 @@ public class GentleDataExtractor {
 
 		return literature;
 	}
+	
+	private Medium getMedium(ExtendedRelationship bilddateiZuWerkRelationship) {
+		Medium medium = null;
+		Entity mediumEntity = bilddateiZuWerkRelationship.getFrom();
+		if (mediumEntity.getImagePath() != null) {
+			medium = new Medium(mediumEntity);
+
+			Predicate<ExtendedRelationship> predicateFrom = getPredicateFrom(mediumEntity.getId());
+
+			List<Entity> rights = filterTo(verwertungsrechtAmFoto, predicateFrom);
+			List<Entity> persons = filterTo(fotografiertVon, predicateFrom);
+
+			if (!rights.isEmpty()) {
+				medium.setExploitationRight(getInstitutionBranch(rights.get(0)));
+			}
+
+			List<Person> photographers = new ArrayList<>();
+
+			persons.forEach(x -> {
+
+				Person photographer = getPersonBranch(x, 0);
+				photographers.add(photographer);
+
+			});
+
+			medium.setPhotographers(photographers);
+			
+			// add bilddateiZuWerk relationship's properties to medium
+			for(String property: bilddateiZuWerkRelationship.getProperties()) {
+				Property titleProperty = new Entity.Properties.Property();
+				titleProperty.setName("title");
+				titleProperty.setValue(property);
+				medium.getProperties().getProperty().add(titleProperty);
+			}
+		}
+
+	return medium;
+	}
 
 	/**
 	 * Mediums...
@@ -418,17 +455,11 @@ public class GentleDataExtractor {
 //
 //		Predicate<ExtendedRelationship> predicateTo = getPredicateTo(identifier);
 //		
-//		List<ExtendedRelationship> fromMediumRelationships = filterRelationshipsFrom(bilddateiZuWerk, predicateTo);
-//		
-//		//List<Entity> images = filterFrom(bilddateiZuWerk, predicateTo);
+//		List<Entity> images = filterFrom(bilddateiZuWerk, predicateTo);
 //
 //		List<Medium> mediums = new ArrayList<>();
 //
-//		//for (Entity image : images) {
-//		
-//		for (ExtendedRelationship fromMediumRelationship : fromMediumRelationships) {
-//			
-//			Entity image = fromMediumRelationship.getFrom();
+//		for (Entity image : images) {
 //
 //			if (image.getImagePath() == null) {
 //				continue;
@@ -456,69 +487,11 @@ public class GentleDataExtractor {
 //
 //			medium.setPhotographers(photographers);
 //			
-//			// add bilddateiZuWerk relationship's properties to medium
-//			for(String property: fromMediumRelationship.getProperties()) {
-//				Property titleProperty = new Entity.Properties.Property();
-//				titleProperty.setName("title");
-//				titleProperty.setValue(property);
-//				medium.getProperties().getProperty().add(titleProperty);
-//			}
-//			
 //			mediums.add(medium);
 //		}
 //
 //		return mediums;
 //	}
-	
-	private List<Medium> getMediumBranch(final String identifier, ExtendedRelationship bilddateiZuWerkRelationship) {
-
-		Predicate<ExtendedRelationship> predicateTo = getPredicateTo(identifier);
-		
-		List<Entity> images = filterFrom(bilddateiZuWerk, predicateTo);
-
-		List<Medium> mediums = new ArrayList<>();
-
-		for (Entity image : images) {
-
-			if (image.getImagePath() == null) {
-				continue;
-			}
-
-			Medium medium = new Medium(image);
-
-			Predicate<ExtendedRelationship> predicateFrom = getPredicateFrom(image.getId());
-
-			List<Entity> rights = filterTo(verwertungsrechtAmFoto, predicateFrom);
-			List<Entity> persons = filterTo(fotografiertVon, predicateFrom);
-
-			if (!rights.isEmpty()) {
-				medium.setExploitationRight(getInstitutionBranch(rights.get(0)));
-			}
-
-			List<Person> photographers = new ArrayList<>();
-
-			persons.forEach(x -> {
-
-				Person photographer = getPersonBranch(x, 0);
-				photographers.add(photographer);
-
-			});
-
-			medium.setPhotographers(photographers);
-			
-			// add bilddateiZuWerk relationship's properties to medium
-			for(String property: bilddateiZuWerkRelationship.getProperties()) {
-				Property titleProperty = new Entity.Properties.Property();
-				titleProperty.setName("title");
-				titleProperty.setValue(property);
-				medium.getProperties().getProperty().add(titleProperty);
-			}
-			
-			mediums.add(medium);
-		}
-
-		return mediums;
-	}
 
 	/**
 	 * Institution
@@ -596,10 +569,6 @@ public class GentleDataExtractor {
 	private List<Entity> filterFrom(Collection<ExtendedRelationship> relations, Predicate<ExtendedRelationship> predicate) {
 		return relations.stream().filter(predicate).map(ExtendedRelationship::getFrom).collect(Collectors.toList());
 	}
-	
-	private List<ExtendedRelationship> filterRelationshipsFrom(Collection<ExtendedRelationship> relations, Predicate<ExtendedRelationship> predicate) {
-		return relations.stream().filter(predicate).collect(Collectors.toList());
-	}
 
 	private List<Entity> filterTo(Collection<ExtendedRelationship> relations, Predicate<ExtendedRelationship> predicate) {
 		return relations.stream().filter(predicate).map(ExtendedRelationship::getTo).collect(Collectors.toList());
@@ -633,6 +602,9 @@ public class GentleDataExtractor {
 		return relationships.stream().filter(x -> x.getRelation().getId().equals(identifier)).collect(Collectors.toSet());
 	}
 	
+	private List<ExtendedRelationship> filterRelationshipsFrom(Collection<ExtendedRelationship> relations, Predicate<ExtendedRelationship> predicate) {
+		return relations.stream().filter(predicate).collect(Collectors.toList());
+	}
 
 	// @formatter:off
 
