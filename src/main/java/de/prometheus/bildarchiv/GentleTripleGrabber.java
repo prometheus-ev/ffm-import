@@ -44,8 +44,10 @@ public class GentleTripleGrabber {
 
 	public void listRecords(Endpoint endpoint, Map<String,String> optionalArguments) throws NoSuchEndpointException, HttpURLConnectionException {
 		Map<String,String> arguments = new HashMap<String,String>();
-		arguments.putAll(optionalArguments);
-
+		if (optionalArguments != null) {
+			arguments.putAll(optionalArguments);
+		}
+		
 		ExecutorService executor = Executors.newFixedThreadPool(1);
 		AtomicInteger index = new AtomicInteger();
 		File parent = new File(new File(dataDirectory), endpoint.name());

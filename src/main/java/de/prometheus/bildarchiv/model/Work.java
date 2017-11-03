@@ -125,9 +125,9 @@ public class Work extends Basic implements ToJson {
 		this.subtype = subtype;
 	}
 
-	public List<Place> getSites() {
-		return sites;
-	}
+//	public List<Place> getSites() {
+//		return sites;
+//	}
 
 	public void setSites(List<Place> sites) {
 		this.sites = sites;

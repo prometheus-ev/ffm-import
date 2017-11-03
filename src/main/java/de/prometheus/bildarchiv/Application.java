@@ -2,8 +2,8 @@ package de.prometheus.bildarchiv;
 
 import java.io.File;
 import java.io.FileNotFoundException;
-import java.util.HashMap;
-import java.util.Map;
+import java.io.IOException;
+import java.util.Date;
 import java.util.Properties;
 import java.util.Set;
 
@@ -15,11 +15,12 @@ import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
+import org.apache.commons.io.FileUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import de.prometheus.bildarchiv.exception.NoSuchEndpointException;
 import de.prometheus.bildarchiv.exception.HttpURLConnectionException;
+import de.prometheus.bildarchiv.exception.NoSuchEndpointException;
 import de.prometheus.bildarchiv.model.ExtendedRelationship;
 import de.prometheus.bildarchiv.util.Endpoint;
 import de.prometheus.bildarchiv.util.GentleUtils;
@@ -41,24 +42,28 @@ public class Application {
 		Option configOption = new Option("c", "config", true, "The configuration directory");
 		configOption.setRequired(true);
 		
-		Option destinationOption = new Option("d", "data", true, "The data directory contains temporary and output files");
-		destinationOption.setRequired(false);
+		Option dataOption = new Option("d", "data", true, "The data directory contains temporary and output files");
+		dataOption.setRequired(false);
 		
 		options.addOption(configOption);
-		options.addOption(destinationOption);
+		options.addOption(dataOption);
 		
-		String dataDirectory = "/tmp";
+		String dataDirectoryPath = "/data";
+		String configDirectoryPath = "/conf";
 		
 		try {
 			CommandLineParser parser = new DefaultParser();
 			CommandLine cmd = parser.parse(options, args);
 			
-			File configDir = new File(cmd.getOptionValue("c"));
-			
+			if(cmd.getOptionValue("c") != null) {
+				configDirectoryPath =  cmd.getOptionValue("c");
+			}
+			File configDir = new File(configDirectoryPath);
+
 			// Logger configuration
 			File log4jXml = new File(configDir, "log4j2.xml");
 			System.setProperty("log4j.configurationFile", log4jXml.getAbsolutePath());
-			logger = LogManager.getLogger(GentleTripleGrabber.class);
+			logger = LogManager.getLogger(Application.class);
 								
 			// ConedaKor configuration
 			File endpointProperties = new File(configDir, "endpoint.properties");
@@ -67,45 +72,56 @@ public class Application {
 			System.setProperty("baseUrl", properties.getProperty("baseUrl"));
 			
 			if(cmd.getOptionValue("d") != null) {
-				dataDirectory =  cmd.getOptionValue("d");
+				dataDirectoryPath =  cmd.getOptionValue("d");
 			}
 			
-			GentleTripleGrabber gentleTripleGrabber = new GentleTripleGrabber(dataDirectory);
+			// clean data directories
+			File dataEnt = new File(dataDirectoryPath, Endpoint.ENTITIES.name());
+			if (dataEnt.exists() && dataEnt.isDirectory()){
+				try {
+					FileUtils.deleteDirectory(dataEnt);
+				} catch (IOException e) {
+					logger.error(e.toString());
+				}
+			}
+			File dataRel = new File(dataDirectoryPath, Endpoint.RELATIONSHIPS.name());
+			if (dataRel.exists() && dataRel.isDirectory()){
+				try {
+					FileUtils.deleteDirectory(dataRel);
+				} catch (IOException e) {
+					logger.error(e.toString());
+				}
+			}
 			
+			// harvest from ConedaKor and transform for Prometheus
+			GentleTripleGrabber gentleTripleGrabber = new GentleTripleGrabber(dataDirectoryPath);
 			try {
-				Map<String,String> optionalArguments = new HashMap<String, String>();
-				//optionalArguments.put("from", "2017-10-01T00:00:00Z");
-				gentleTripleGrabber.listRecords(Endpoint.ENTITIES, optionalArguments);
-				optionalArguments = new HashMap<String, String>();
-				//optionalArguments.put("from", "2017-10-01T00:00:00Z");
-				gentleTripleGrabber.listRecords(Endpoint.RELATIONSHIPS, optionalArguments);
+				// harvest entities and relationships from ConedaKor
+				gentleTripleGrabber.listRecords(Endpoint.ENTITIES, null);
+				gentleTripleGrabber.listRecords(Endpoint.RELATIONSHIPS, null);
+				
+				// merge entities and relationships to extended relationships
+				GentleSegmentMerger gentleSegmentMerger = new GentleSegmentMerger(dataDirectoryPath);
+				Set<ExtendedRelationship> xtendedRelationships = gentleSegmentMerger.mergeEntitiesAndRelationships();
+
+				// transform extended relationships for Prometheus
+				GentleDataExtractor gentleDataExtractor = new GentleDataExtractor(xtendedRelationships, dataDirectoryPath);
+				gentleDataExtractor.extractData();
 			}
 			catch (HttpURLConnectionException e){
 				logger.error(e.toString());
 			}
 
-			GentleSegmentMerger gentleSegmentMerger = new GentleSegmentMerger(dataDirectory);
-			Set<ExtendedRelationship> xtendedRelationships = gentleSegmentMerger.mergeEntitiesAndRelationships();
-
-			GentleDataExtractor gentleDataExtractor = new GentleDataExtractor(xtendedRelationships, dataDirectory);
-			gentleDataExtractor.extractData();
-
 		} catch (ParseException e) {
-			//logger.error(e.toString()); // logger not initialized if parsing configuration doesn't succeed
-			System.out.println(e.toString());
+			System.err.println(e.toString()); // logger not configured
 		} catch (FileNotFoundException e) {
 			logger.error(e.toString());
 		} catch (JAXBException e) {
 			logger.error(e.toString());
 		} catch (NoSuchEndpointException e) {
 			logger.error(e.toString());
-		} finally {
-			//Delete temporary created files on exit
-			File tmpEnt = new File(dataDirectory, Endpoint.ENTITIES.name());
-			File tmpRel = new File(dataDirectory, Endpoint.RELATIONSHIPS.name());
-			tmpEnt.deleteOnExit();
-			tmpRel.deleteOnExit();
 		}
+		
 	}
 
 }
