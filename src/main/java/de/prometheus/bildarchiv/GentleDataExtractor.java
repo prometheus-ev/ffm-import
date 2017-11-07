@@ -274,12 +274,12 @@ public class GentleDataExtractor {
 			}
 		}
 
-//		if(bilddateiZuWerk.isEmpty()) {
-//			logger.info("No Relationships for (" + Relations.BILDDATEI_ZU_WERK + ") present... ");
-//		} else {
+		if(bilddateiZuWerk.isEmpty()) {
+			logger.info("No Relationships for (" + Relations.BILDDATEI_ZU_WERK + ") present... ");
+		} else {
 			GentleUtils.finalExport(works, dataDirectory);
-//		}
-		
+		}
+
 	}
 
 	/**

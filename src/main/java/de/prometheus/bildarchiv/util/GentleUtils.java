@@ -9,11 +9,8 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
@@ -115,8 +112,10 @@ public final class GentleUtils {
 			try {
 				connection = (HttpURLConnection) new URL(url).openConnection();
 				connection.setRequestMethod("GET");
-				connection.setConnectTimeout(10000);
-				connection.setReadTimeout(10000);
+//				connection.setConnectTimeout(10000);
+//				connection.setReadTimeout(10000);
+				connection.setConnectTimeout(0); // infinite timeout
+				connection.setReadTimeout(0); // infinite timeout
 				connection.connect();
 				
 				int code = connection.getResponseCode();
@@ -131,30 +130,7 @@ public final class GentleUtils {
 				logger.error(e.toString());
 			}
 		}
-		// attempt failed to establish connection
-		Map<String,String> queryParameters = new HashMap<String,String>();
-		String repositoryType = "";
-		try {
-			URL urlObject = new URL(url);
-			String urlPath = urlObject.getPath();
-			String[] pathComponents = urlPath.split("/");
-			repositoryType = pathComponents[pathComponents.length - 1];
-			
-			String[] queryStrings = urlObject.getQuery().split("&");
-			for (String queryString : queryStrings) {
-				String[] keyValue = queryString.split("=");
-				queryParameters.put(keyValue[0], keyValue[1]);
-			}
-		} catch (MalformedURLException e) {
-			e.printStackTrace();
-		}
-		
-		if (queryParameters.containsKey("resumptionToken")) {
-			throw new HttpURLConnectionException("Connection to url " +  url + " could not be established. Resume with " + repositoryType + " resumptionToken: " + queryParameters.get("resumptionToken"));
-		} else {
-			throw new HttpURLConnectionException("Connection to url " +  url + " could not be established.");
-		}
-	
+		throw new HttpURLConnectionException("Connection to url " +  url + " could not be established. Resume harvest with resumption token.");	
 	}
 
 	/**
