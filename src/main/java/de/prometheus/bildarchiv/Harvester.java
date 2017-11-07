@@ -122,6 +122,8 @@ public class Harvester {
 		} catch (NoSuchEndpointException e) {
 			logger.error(e.toString());
 		}
+		
+		System.exit(0);
 	}
 
 }

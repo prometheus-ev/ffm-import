@@ -77,6 +77,8 @@ public class Transformer {
 		} catch (JAXBException e) {
 			logger.error(e.toString());
 		}
+		
+		System.exit(0);
 
 	}
 
