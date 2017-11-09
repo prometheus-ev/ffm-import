@@ -53,7 +53,7 @@ public enum Endpoint {
 		Map<String,String> arguments = new HashMap<String, String>();
 		arguments.put("verb", "ListIdentifiers");
 		arguments.put("metadataPrefix", "kor");
-		arguments.put("apiKey", apiKey.replace("api_key=", "")); //ugly fix
+		arguments.put("api_Key", apiKey.replace("api_key=", "")); //ugly fix
 		arguments.putAll(optionalArguments); //TODO resumptionToken should be exclusive argument
 		return buildHttpRequestURL(arguments);
 	}
@@ -62,7 +62,7 @@ public enum Endpoint {
 		Map<String,String> arguments = new HashMap<String, String>();
 		arguments.put("verb", "ListRecords");
 		arguments.put("metadataPrefix", "kor");
-		arguments.put("apiKey", apiKey.replace("api_key=", "")); //ugly fix
+		arguments.put("api_key", apiKey.replace("&api_key=", "")); //ugly fix
 		arguments.putAll(optionalArguments); //TODO resumptionToken should be exclusive argument
 		return buildHttpRequestURL(arguments);
 	}
