@@ -18,6 +18,7 @@ Running the programm:
 # separate harvesting and transforming
 To generate separate harvesting and transforming applications change mainClass element value of plugin element in pom.xml from de.prometheus.bildarchiv.Application to de.prometheus.bildarchiv.Harvester or de.prometheus.bildarchiv.Transformer respectively
 
+```xml
 <plugin>
 	<artifactId>maven-assembly-plugin</artifactId>
 	<configuration>
@@ -41,5 +42,6 @@ To generate separate harvesting and transforming applications change mainClass e
 		</execution>
 	</executions>
 </plugin>
+```
 
 Rebuild and run with above commands. Make sure data directory specified is the same for Harvester and Transformer.
