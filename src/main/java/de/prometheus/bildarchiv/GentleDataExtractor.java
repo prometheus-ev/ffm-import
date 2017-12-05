@@ -208,7 +208,7 @@ public class GentleDataExtractor {
 					}
 
 					// #1
-					List<ExtendedRelationship> bilddateiZuThisWerkRelationships = filterRelationshipsFrom(bilddateiZuWerk, predicateTo);
+					List<ExtendedRelationship> bilddateiZuThisWerkRelationships = filterRelationships(bilddateiZuWerk, predicateTo);
 					for (ExtendedRelationship bilddateiZuThisWerkRelationship: bilddateiZuThisWerkRelationships) {
 						Medium medium = getMedium(bilddateiZuThisWerkRelationship);
 						if (medium != null) {
@@ -440,6 +440,22 @@ public class GentleDataExtractor {
 				titleProperty.setValue(property);
 				medium.getProperties().getProperty().add(titleProperty);
 			}
+			
+			// add image references
+			ArrayList<String> references = new ArrayList<String>();
+			Predicate<ExtendedRelationship> predicateTo = getPredicateTo(mediumEntity.getId());			
+			List<ExtendedRelationship> literaturEnthaeltBilddateiRelationships = filterRelationships(literaturEnthaeltBilddatei, predicateTo);
+			for(ExtendedRelationship literaturEnthaeltBilddateiRelationship: literaturEnthaeltBilddateiRelationships) {
+				String reference = "";
+				Entity literatur = literaturEnthaeltBilddateiRelationship.getFrom();
+				reference = reference + literatur.getTitle();
+				for(String property: literaturEnthaeltBilddateiRelationship.getProperties()) {
+					reference = reference + ", " + property;
+				}
+				references.add(reference);
+			}
+			medium.setReferences(references);
+			
 		}
 
 	return medium;
@@ -602,7 +618,7 @@ public class GentleDataExtractor {
 		return relationships.stream().filter(x -> x.getRelation().getId().equals(identifier)).collect(Collectors.toSet());
 	}
 	
-	private List<ExtendedRelationship> filterRelationshipsFrom(Collection<ExtendedRelationship> relations, Predicate<ExtendedRelationship> predicate) {
+	private List<ExtendedRelationship> filterRelationships(Collection<ExtendedRelationship> relations, Predicate<ExtendedRelationship> predicate) {
 		return relations.stream().filter(predicate).collect(Collectors.toList());
 	}
 

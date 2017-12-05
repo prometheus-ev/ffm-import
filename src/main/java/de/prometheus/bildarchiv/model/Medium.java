@@ -13,6 +13,7 @@ public class Medium extends Basic {
 	
 	private List<Person> photographers;
 	private Institution exploitationRight;
+	private List<String> references;
 	private String imagePath;
 	
 	public Medium() { }
@@ -38,6 +39,14 @@ public class Medium extends Basic {
 		this.exploitationRight = exploitationRight;
 	}
 	
+	public List<String> getReferences() {
+		return references;
+	}
+
+	public void setReferences(List<String> references) {
+		this.references = references;
+	}
+	
 	public String getImagePath() {
 		return imagePath;
 	}
@@ -48,10 +57,8 @@ public class Medium extends Basic {
 
 	@Override
 	public String toString() {
-		return "Medium [photographers=" + photographers + ", exploitationRight=" + exploitationRight + ", imagePath="
-				+ imagePath + "]" + super.toString();
+		return "Medium [photographers=" + photographers + ", exploitationRight=" + exploitationRight + ", references="
+				+ references + ", imagePath=" + imagePath + "]" + super.toString();
 	}
-	
-	
 
 }
