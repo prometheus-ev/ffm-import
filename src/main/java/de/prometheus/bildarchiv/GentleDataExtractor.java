@@ -32,6 +32,7 @@ import de.prometheus.bildarchiv.model.Medium;
 import de.prometheus.bildarchiv.model.Part;
 import de.prometheus.bildarchiv.model.Person;
 import de.prometheus.bildarchiv.model.Place;
+import de.prometheus.bildarchiv.model.Source;
 import de.prometheus.bildarchiv.model.Work;
 import de.prometheus.bildarchiv.util.GentleUtils;
 import de.prometheus.bildarchiv.util.Relations;
@@ -442,72 +443,23 @@ public class GentleDataExtractor {
 			}
 			
 			// add image references
-			ArrayList<String> references = new ArrayList<String>();
 			Predicate<ExtendedRelationship> predicateTo = getPredicateTo(mediumEntity.getId());			
 			List<ExtendedRelationship> literaturEnthaeltBilddateiRelationships = filterRelationships(literaturEnthaeltBilddatei, predicateTo);
+			List<Source> sources = new ArrayList<Source>();
 			for(ExtendedRelationship literaturEnthaeltBilddateiRelationship: literaturEnthaeltBilddateiRelationships) {
-				String reference = "";
-				Entity literatur = literaturEnthaeltBilddateiRelationship.getFrom();
-				reference = reference + literatur.getTitle();
+				Entity literature_entity = literaturEnthaeltBilddateiRelationship.getFrom();
+				Literature literature = getLiteratureBranch(literature_entity);
+				Source source = new Source(literature);
 				for(String property: literaturEnthaeltBilddateiRelationship.getProperties()) {
-					reference = reference + ", " + property;
+					source.addInnerReference(property);
 				}
-				references.add(reference);
+				sources.add(source);
 			}
-			medium.setReferences(references);
-			
+			medium.setSources(sources);	
 		}
 
 	return medium;
 	}
-
-	/**
-	 * Mediums...
-	 * 
-	 * @param id
-	 * @return List
-	 */
-//	private List<Medium> getMediumBranch(final String identifier) {
-//
-//		Predicate<ExtendedRelationship> predicateTo = getPredicateTo(identifier);
-//		
-//		List<Entity> images = filterFrom(bilddateiZuWerk, predicateTo);
-//
-//		List<Medium> mediums = new ArrayList<>();
-//
-//		for (Entity image : images) {
-//
-//			if (image.getImagePath() == null) {
-//				continue;
-//			}
-//
-//			Medium medium = new Medium(image);
-//
-//			Predicate<ExtendedRelationship> predicateFrom = getPredicateFrom(image.getId());
-//
-//			List<Entity> rights = filterTo(verwertungsrechtAmFoto, predicateFrom);
-//			List<Entity> persons = filterTo(fotografiertVon, predicateFrom);
-//
-//			if (!rights.isEmpty()) {
-//				medium.setExploitationRight(getInstitutionBranch(rights.get(0)));
-//			}
-//
-//			List<Person> photographers = new ArrayList<>();
-//
-//			persons.forEach(x -> {
-//
-//				Person photographer = getPersonBranch(x, 0);
-//				photographers.add(photographer);
-//
-//			});
-//
-//			medium.setPhotographers(photographers);
-//			
-//			mediums.add(medium);
-//		}
-//
-//		return mediums;
-//	}
 
 	/**
 	 * Institution

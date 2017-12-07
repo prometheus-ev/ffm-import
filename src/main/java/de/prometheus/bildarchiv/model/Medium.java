@@ -2,6 +2,9 @@ package de.prometheus.bildarchiv.model;
 
 import java.util.List;
 
+import javax.xml.bind.annotation.XmlElement;
+import javax.xml.bind.annotation.XmlElementWrapper;
+
 import org.openarchives.model.Entity;
 
 /**
@@ -13,7 +16,9 @@ public class Medium extends Basic {
 	
 	private List<Person> photographers;
 	private Institution exploitationRight;
-	private List<String> references;
+	@XmlElementWrapper(name="sources")
+	@XmlElement(name = "source")
+	private List<Source> sources;
 	private String imagePath;
 	
 	public Medium() { }
@@ -39,14 +44,14 @@ public class Medium extends Basic {
 		this.exploitationRight = exploitationRight;
 	}
 	
-	public List<String> getReferences() {
-		return references;
+/*	public List<Source> getSources() {
+		return sources;
+	}*/
+
+	public void setSources(List<Source> sources) {
+		this.sources = sources;
 	}
 
-	public void setReferences(List<String> references) {
-		this.references = references;
-	}
-	
 	public String getImagePath() {
 		return imagePath;
 	}
@@ -57,8 +62,8 @@ public class Medium extends Basic {
 
 	@Override
 	public String toString() {
-		return "Medium [photographers=" + photographers + ", exploitationRight=" + exploitationRight + ", references="
-				+ references + ", imagePath=" + imagePath + "]" + super.toString();
+		return "Medium [photographers=" + photographers + ", exploitationRight=" + exploitationRight + ", sources="
+				+ sources + ", imagePath=" + imagePath + "]" + super.toString();
 	}
 
 }
