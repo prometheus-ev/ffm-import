@@ -1,5 +1,6 @@
 package de.prometheus.bildarchiv.model;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import javax.xml.bind.annotation.XmlElement;
@@ -16,9 +17,9 @@ public class Medium extends Basic {
 	
 	private List<Person> photographers;
 	private Institution exploitationRight;
-	@XmlElementWrapper(name="sources")
-	@XmlElement(name = "source")
-	private List<Source> sources;
+	@XmlElementWrapper(name="credits")
+	@XmlElement(name="credit")
+	private List<Credit> credits;
 	private String imagePath;
 	
 	public Medium() { }
@@ -44,12 +45,11 @@ public class Medium extends Basic {
 		this.exploitationRight = exploitationRight;
 	}
 	
-/*	public List<Source> getSources() {
-		return sources;
-	}*/
-
-	public void setSources(List<Source> sources) {
-		this.sources = sources;
+	public void addCredit(Credit credit) {
+		if (this.credits == null) {
+			this.credits = new ArrayList<Credit>();
+		}
+		this.credits.add(credit);
 	}
 
 	public String getImagePath() {
@@ -59,11 +59,11 @@ public class Medium extends Basic {
 	public void setImagePath(String imagePath) {
 		this.imagePath = imagePath;
 	}
-
+	
 	@Override
 	public String toString() {
-		return "Medium [photographers=" + photographers + ", exploitationRight=" + exploitationRight + ", sources="
-				+ sources + ", imagePath=" + imagePath + "]" + super.toString();
+		return "Medium [photographers=" + photographers + ", exploitationRight=" + exploitationRight + ", credits="
+				+ credits + ", imagePath=" + imagePath + "]" + super.toString();
 	}
 
 }

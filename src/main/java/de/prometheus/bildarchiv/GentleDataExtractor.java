@@ -24,6 +24,7 @@ import org.apache.logging.log4j.Logger;
 import org.openarchives.model.Entity;
 import org.openarchives.model.Entity.Properties.Property;
 
+import de.prometheus.bildarchiv.model.Credit;
 import de.prometheus.bildarchiv.model.Exhibition;
 import de.prometheus.bildarchiv.model.ExtendedRelationship;
 import de.prometheus.bildarchiv.model.Institution;
@@ -32,7 +33,6 @@ import de.prometheus.bildarchiv.model.Medium;
 import de.prometheus.bildarchiv.model.Part;
 import de.prometheus.bildarchiv.model.Person;
 import de.prometheus.bildarchiv.model.Place;
-import de.prometheus.bildarchiv.model.Source;
 import de.prometheus.bildarchiv.model.Work;
 import de.prometheus.bildarchiv.util.GentleUtils;
 import de.prometheus.bildarchiv.util.Relations;
@@ -442,20 +442,15 @@ public class GentleDataExtractor {
 				medium.getProperties().getProperty().add(titleProperty);
 			}
 			
-			// add image references
+			// add image credits
 			Predicate<ExtendedRelationship> predicateTo = getPredicateTo(mediumEntity.getId());			
 			List<ExtendedRelationship> literaturEnthaeltBilddateiRelationships = filterRelationships(literaturEnthaeltBilddatei, predicateTo);
-			List<Source> sources = new ArrayList<Source>();
 			for(ExtendedRelationship literaturEnthaeltBilddateiRelationship: literaturEnthaeltBilddateiRelationships) {
 				Entity literature_entity = literaturEnthaeltBilddateiRelationship.getFrom();
 				Literature literature = getLiteratureBranch(literature_entity);
-				Source source = new Source(literature);
-				for(String property: literaturEnthaeltBilddateiRelationship.getProperties()) {
-					source.addInnerReference(property);
-				}
-				sources.add(source);
-			}
-			medium.setSources(sources);	
+				List<String> innerReferences = literaturEnthaeltBilddateiRelationship.getProperties();
+				medium.addCredit(new Credit(literature, innerReferences));
+			}	
 		}
 
 	return medium;
