@@ -1,9 +1,12 @@
 package de.prometheus.bildarchiv.model;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.commons.lang3.ArrayUtils;
+import javax.xml.bind.annotation.XmlElement;
+import javax.xml.bind.annotation.XmlElementWrapper;
+
 import org.openarchives.model.Entity.Fields.Field;
 
 public class Credit implements Serializable {
@@ -15,30 +18,34 @@ public class Credit implements Serializable {
 	
 	private String author;
 	private String title;
+	private String distinction;
 	private String editor;
 	private String volume;
 	private String publisher;
 	private String yearOfPublication;
 	private String placeOfPublication;
-	private String internalReference;
+	@XmlElementWrapper(name="internal_references")
+	@XmlElement(name="internal_reference")
+	private List<String> internalReferences;
 	private String comment;
 		
 	public Credit(Literature literature, List<String> properties) {
 		super();
 		if(literature != null) {
 			String author = null;
-			if (literature.getAuthor() != null && literature.getAuthor().getTitle() != null) {
-				String[] authorNameParts = literature.getAuthor().getTitle().split(", ");
-				ArrayUtils.reverse(authorNameParts);
-				author = String.join(", ", authorNameParts);
+			if (literature.getAuthor() != null) {
+				author = literature.getAuthor().getTitle();
 			}
 			this.author = author;
 
 			String title = null;
-			if (literature.getTitle() != null) {
-				title = literature.getTitle() + (literature.getDistinction() == null ? "" : (" " + literature.getDistinction()));
-			}
+			title = literature.getTitle();
 			this.title = title;
+			
+			String distinction = null;
+			distinction = literature.getDistinction();
+			this.distinction = distinction;
+			
 
 			String volume = null;
 			String publisher = null;
@@ -65,16 +72,14 @@ public class Credit implements Serializable {
 			this.yearOfPublication = yearOfPublication;
 
 			String editor = null;
-			if (literature.getPublisher() != null && literature.getPublisher().getTitle() != null) {
-				String[] editorNameParts = literature.getPublisher().getTitle().split(", ");
-				ArrayUtils.reverse(editorNameParts);
-				editor = String.join(", ", editorNameParts);
+			if (literature.getPublisher() != null) {
+				editor = literature.getPublisher().getTitle();
 			}
 			this.editor = editor;
 
 			String placeOfPublication = null;
 			if(literature.getPublishedIn() != null) {
-			placeOfPublication = literature.getPublishedIn().getTitle();
+				placeOfPublication = literature.getPublishedIn().getTitle();
 			}
 			this.placeOfPublication = placeOfPublication; 
 
@@ -82,16 +87,7 @@ public class Credit implements Serializable {
 			comment = literature.getComment();
 			this.comment = comment;
 
-			String internalReference = null;
-			for(String property : properties) {
-				if (internalReference == null) {
-					internalReference = property;
-				}
-				else {
-					internalReference = internalReference + ", " + property;
-				}
-			}
-			this.internalReference = internalReference;
+			this.internalReferences = properties;
 		}
 	}
 	
@@ -131,30 +127,37 @@ public class Credit implements Serializable {
 	public void setYearOfPublication(String yearOfPublication) {
 		this.yearOfPublication = yearOfPublication;
 	}
-	public String getInternalReference() {
-		return internalReference;
-	}
-	public void setInternalReference(String internalReference) {
-		this.internalReference = internalReference;
-	}
 	public String getComment() {
 		return comment;
 	}
 	public void setComment(String comment) {
 		this.comment = comment;
 	}
-		public String getPublisher() {
+	public String getPublisher() {
 		return publisher;
 	}
 	public void setPublisher(String publisher) {
 		this.publisher = publisher;
 	}
-	
+	public String getDistinction() {
+		return distinction;
+	}
+	public void setDistinction(String distinction) {
+		this.distinction = distinction;
+	}
+	public void addInternalRefernce(String internalReference) {
+		if (this.internalReferences == null) {
+			this.internalReferences = new ArrayList<String>();
+		}
+		this.internalReferences.add(internalReference);
+	}
+
 	@Override
 	public String toString() {
-		return "Credit [author=" + author + ", title=" + title + ", editor=" + editor + ", volume=" + volume
-				+ ", publisher=" + publisher + ", yearOfPublication=" + yearOfPublication + ", placeOfPublication="
-				+ placeOfPublication + ", internalReference=" + internalReference + ", comment=" + comment + "]";
+		return "Credit [author=" + author + ", title=" + title + ", distinction=" + distinction + ", editor=" + editor
+				+ ", volume=" + volume + ", publisher=" + publisher + ", yearOfPublication=" + yearOfPublication
+				+ ", placeOfPublication=" + placeOfPublication + ", internalReferences=" + internalReferences
+				+ ", comment=" + comment + "]";
 	}
-	
+
 }
