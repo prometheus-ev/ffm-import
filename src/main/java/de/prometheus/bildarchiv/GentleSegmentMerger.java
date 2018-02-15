@@ -11,7 +11,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
@@ -39,26 +38,12 @@ public class GentleSegmentMerger {
 
 	private Logger logger = LogManager.getLogger(GentleSegmentMerger.class);
 
-	private final String dataDirectory;
+	private final File dataDir;
+	private final String timestamp;
 
-	public GentleSegmentMerger(final String dataDirectory) {
-		
-		this.dataDirectory = dataDirectory;
-	
-	}
-	
-	public static void main(String[] args) throws PropertyException, FileNotFoundException, JAXBException {
-		
-		File log4jXml = new File("conf/", "log4j2.xml");
-		System.setProperty("log4j.configurationFile", log4jXml.getAbsolutePath());
-		
-		File endpointProperties = new File("conf/", "endpoint.properties");
-		Properties properties = GentleUtils.getProperties(endpointProperties);
-		System.setProperty("apiKey", properties.getProperty("apiKey"));
-		System.setProperty("baseUrl", properties.getProperty("baseUrl"));
-		
-		GentleSegmentMerger merger = new GentleSegmentMerger("/tmp");
-		merger.mergeEntitiesAndRelationships();
+	public GentleSegmentMerger(final File dataDir, final String timestamp) {
+		this.dataDir = dataDir;
+		this.timestamp = timestamp;
 	}
 
 	public Set<ExtendedRelationship> mergeEntitiesAndRelationships() throws PropertyException, JAXBException, FileNotFoundException {
@@ -69,7 +54,8 @@ public class GentleSegmentMerger {
 			logger.info("Merging endpoints 'relationships' and 'entities' ...");
 		}
 		
-		RecordTypeWrapper entityRecords = new RecordTypeWrapper(getRecords(new File(dataDirectory, "ENTITIES/")), Endpoint.ENTITIES);
+		File entRecordsDir = new File(dataDir, Endpoint.ENTITIES.name() + "_" + timestamp);
+		RecordTypeWrapper entityRecords = new RecordTypeWrapper(getRecords(entRecordsDir), Endpoint.ENTITIES);
 		
 		Set<Entity> entities = entityRecords.getEntities();
 		
@@ -80,7 +66,8 @@ public class GentleSegmentMerger {
 		List<Entity> sortedEntities = new ArrayList<>(entities);
 		Collections.sort(sortedEntities);
 		
-		RecordTypeWrapper relRecords = new RecordTypeWrapper(getRecords(new File(dataDirectory, "RELATIONSHIPS/")), Endpoint.RELATIONSHIPS);
+		File relRecordsDir = new File(dataDir, Endpoint.RELATIONSHIPS.name() + "_" + timestamp);
+		RecordTypeWrapper relRecords = new RecordTypeWrapper(getRecords(relRecordsDir), Endpoint.RELATIONSHIPS);
 		Set<Relationship> relationships = relRecords.getRelationships();
 		
 		if (logger.isInfoEnabled()) {
@@ -118,7 +105,7 @@ public class GentleSegmentMerger {
 			getMissingRecords(notRetrieved, xtendedRelationships);
 		}
 
-		GentleUtils.toXml(xtendedRelationships, new File(dataDirectory));
+		GentleUtils.toXml(xtendedRelationships, dataDir, timestamp);
 
 		if (logger.isInfoEnabled()) {
 			long duration = System.currentTimeMillis() - time;

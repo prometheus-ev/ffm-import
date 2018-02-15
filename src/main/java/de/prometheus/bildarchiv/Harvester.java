@@ -1,9 +1,7 @@
 package de.prometheus.bildarchiv;
 
 import java.io.File;
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.Date;
 import java.util.Properties;
 
 import org.apache.commons.cli.CommandLine;
@@ -12,9 +10,7 @@ import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
-
-import org.apache.commons.io.FileUtils;
-
+import org.apache.commons.lang3.time.DateFormatUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -35,19 +31,14 @@ public class Harvester {
 		Option dataOption = new Option("d", "data", true, "The data directory contains temporary and output files");
 		dataOption.setRequired(false);
 		
-		Option entitiesResumptionOption = new Option("e", "entityResumptionToken", true, "Token for entity harvesting resumption");
-		entitiesResumptionOption.setRequired(false);
-		Option relationshipsResumptionOption = new Option("r", "relationshipResumptionToken", true, "Token for relationship harvesting resumption");
-		relationshipsResumptionOption.setRequired(false);
-		
 		options.addOption(configOption);
 		options.addOption(dataOption);
-		options.addOption(entitiesResumptionOption);
-		options.addOption(relationshipsResumptionOption);
 		
 		// default values
-		String dataDirectoryPath = "/data";
-		String configDirectoryPath = "/conf";
+		String dataDirectoryPath = "./data";
+		String configDirectoryPath = "./conf";
+		
+		String timestamp = DateFormatUtils.format(new Date(), "yyyy-MM-dd-HH-mm-ss");
 		
 		try {
 			CommandLineParser parser = new DefaultParser();
@@ -72,46 +63,13 @@ public class Harvester {
 			System.setProperty("apiKey", properties.getProperty("apiKey"));
 			System.setProperty("baseUrl", properties.getProperty("baseUrl"));
 			
-			// Cleaning data directory
-			if(cmd.getOptionValue("r") == null) { // new relationships harvest
-				File dataRel = new File(dataDirectoryPath, Endpoint.RELATIONSHIPS.name());
-				if (dataRel.exists()){
-					try {
-						FileUtils.deleteDirectory(dataRel);
-					} catch (IOException e) {
-						logger.error(e.toString());
-					}
-				}
-				if(cmd.getOptionValue("e") == null) { // new entities harvest
-					File dataEnt = new File(dataDirectoryPath, Endpoint.ENTITIES.name());
-					if (dataEnt.exists()){
-						try {
-							FileUtils.deleteDirectory(dataEnt);
-						} catch (IOException e) {
-							logger.error(e.toString());
-						}
-					}
-				}
-			}
+			File dataDir = new File(dataDirectoryPath);
+			dataDir.mkdir();
 			
-			GentleTripleGrabber gentleTripleGrabber = new GentleTripleGrabber(dataDirectoryPath);
+			GentleTripleGrabber gentleTripleGrabber = new GentleTripleGrabber(dataDir, timestamp);
 			try {
-				if(cmd.getOptionValue("e") != null) {
-					Map<String,String> optionalArguments = new HashMap<String, String>();
-					optionalArguments.put("resumptionToken", cmd.getOptionValue("e"));
-					gentleTripleGrabber.listRecords(Endpoint.ENTITIES, optionalArguments);
-					gentleTripleGrabber.listRecords(Endpoint.RELATIONSHIPS, null);
-				} 
-				else if (cmd.getOptionValue("r") != null) {
-					Map<String,String> optionalArguments = new HashMap<String, String>();
-					optionalArguments.put("resumptionToken", cmd.getOptionValue("r"));
-					gentleTripleGrabber.listRecords(Endpoint.RELATIONSHIPS, optionalArguments);
-				}
-				else {
-					gentleTripleGrabber.listRecords(Endpoint.ENTITIES, null);
-					gentleTripleGrabber.listRecords(Endpoint.RELATIONSHIPS, null);
-				}
-				
+				gentleTripleGrabber.listRecords(Endpoint.ENTITIES, null);
+				gentleTripleGrabber.listRecords(Endpoint.RELATIONSHIPS, null);
 			}
 			catch (HttpURLConnectionException e){
 				logger.error(e.toString());

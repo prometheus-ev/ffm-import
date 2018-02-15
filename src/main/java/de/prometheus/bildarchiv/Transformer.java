@@ -30,12 +30,17 @@ public class Transformer {
 			dataOption.setRequired(false);
 			options.addOption(dataOption);
 			Option configOption = new Option("c", "config", true, "The configuration directory");
-			configOption.setRequired(true);
-			options.addOption(configOption);		
+			configOption.setRequired(false);
+			options.addOption(configOption);
+			Option timestampOption = new Option("ts", "timestamp", true, "The harvest timestamp");
+			timestampOption.setRequired(true);
+			options.addOption(timestampOption);	
 
 			// default values
-			String dataDirectoryPath = "/data";
-			String configDirectoryPath = "/conf";
+			String dataDirectoryPath = "./data";
+			String configDirectoryPath = "./conf";
+			
+			String timestamp = "";
 		
 		try {
 			CommandLineParser parser = new DefaultParser();
@@ -47,6 +52,10 @@ public class Transformer {
 		
 			if(cmd.getOptionValue("c") != null) {
 				configDirectoryPath = cmd.getOptionValue("c");
+			}
+			
+			if(cmd.getOptionValue("ts") != null) {
+				timestamp = cmd.getOptionValue("ts");
 			}
 			
 			File configDirectory = new File(configDirectoryPath);
@@ -62,13 +71,16 @@ public class Transformer {
 			System.setProperty("apiKey", properties.getProperty("apiKey"));
 			System.setProperty("baseUrl", properties.getProperty("baseUrl"));
 			
+			File dataDir = new File(dataDirectoryPath);
+			dataDir.mkdir();
+			
 			// merging ConedaKor entities and relationships into extended relationships					
-			GentleSegmentMerger gentleSegmentMerger = new GentleSegmentMerger(dataDirectoryPath);
+			GentleSegmentMerger gentleSegmentMerger = new GentleSegmentMerger(dataDir, timestamp);
 			Set<ExtendedRelationship> xtendedRelationships = gentleSegmentMerger.mergeEntitiesAndRelationships();
 
 			// transforming extended relationships for Prometheus 
-			GentleDataExtractor gentleDataExtractor = new GentleDataExtractor(xtendedRelationships, dataDirectoryPath);
-			gentleDataExtractor.extractData();
+			GentleDataExtractor gentleDataExtractor = new GentleDataExtractor(dataDir, timestamp);
+			gentleDataExtractor.extractData(xtendedRelationships);
 
 		} catch (ParseException e) {
 			System.err.println(e.toString()); // logger not configured

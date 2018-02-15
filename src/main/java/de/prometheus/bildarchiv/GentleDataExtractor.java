@@ -1,7 +1,6 @@
 package de.prometheus.bildarchiv;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
@@ -11,14 +10,7 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import javax.xml.bind.JAXBException;
-import javax.xml.bind.PropertyException;
 
-import org.apache.commons.cli.CommandLine;
-import org.apache.commons.cli.CommandLineParser;
-import org.apache.commons.cli.DefaultParser;
-import org.apache.commons.cli.Option;
-import org.apache.commons.cli.Options;
-import org.apache.commons.cli.ParseException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.openarchives.model.Entity;
@@ -54,6 +46,7 @@ public class GentleDataExtractor {
 	private static Logger logger;
 
 	private File dataDirectory;
+	private String timestamp;
 
 	private transient Set<ExtendedRelationship> befindetSichIn;
 	private transient Set<ExtendedRelationship> hatGeschaffen;
@@ -80,49 +73,10 @@ public class GentleDataExtractor {
 	private transient Set<ExtendedRelationship> ausstellungskatalogZu;
 	private transient Set<ExtendedRelationship> standortIn;
 	
-	
-	public static void main(String[] args) throws PropertyException, FileNotFoundException, JAXBException {
-		Options options = new Options();
-		Option configOption = new Option("c", "config", true, "The configuration directory");
-		configOption.setRequired(true);
-		Option destinationOption = new Option("d", "data", true, "The data directory contains temporary and output files");
-		destinationOption.setRequired(false);
-		options.addOption(configOption);
-		options.addOption(destinationOption);
-
-		try {
-			CommandLineParser parser = new DefaultParser();
-			CommandLine cmd = parser.parse(options, args);
-			
-			File configDir = new File(cmd.getOptionValue("c"));
-
-			// Logger configuration
-			File log4jXml = new File(configDir, "log4j2.xml");
-			System.setProperty("log4j.configurationFile", log4jXml.getAbsolutePath());
-			logger = LogManager.getLogger(GentleDataExtractor.class);
-
-			String dataDirectoryPath = "/tmp";
-			if(cmd.getOptionValue("d") != null) {
-				dataDirectoryPath = cmd.getOptionValue("d");
-			}
-
-			GentleSegmentMerger merger = new GentleSegmentMerger(dataDirectoryPath);
-			Set<ExtendedRelationship> relationships = merger.mergeEntitiesAndRelationships();
-			
-			GentleDataExtractor exctractor = new GentleDataExtractor(relationships, dataDirectoryPath);
-			exctractor.extractData();
-		} catch (ParseException e) {
-			logger.error(e.toString());
-		}
-	}
-	
-
-	public GentleDataExtractor(Set<ExtendedRelationship> relationships, String dataDirectoryPath) {
-
-		dataDirectory = new File(dataDirectoryPath);
+	public GentleDataExtractor(File dataDir, String timestamp) {
 		logger = LogManager.getLogger(GentleDataExtractor.class);
-		init(relationships);
-
+		this.dataDirectory = dataDir;
+		this.timestamp = timestamp;
 	}
 
 	private void init(Set<ExtendedRelationship> relationships) {
@@ -188,7 +142,8 @@ public class GentleDataExtractor {
 	 * 
 	 * @throws JAXBException
 	 */
-	public void extractData() throws JAXBException {
+	public void extractData(Set<ExtendedRelationship> relationships) throws JAXBException {
+		init(relationships);
 
 		final Set<Work> works = new HashSet<>();
 
@@ -278,7 +233,7 @@ public class GentleDataExtractor {
 		if(bilddateiZuWerk.isEmpty()) {
 			logger.info("No Relationships for (" + Relations.BILDDATEI_ZU_WERK + ") present... ");
 		} else {
-			GentleUtils.finalExport(works, dataDirectory);
+			GentleUtils.finalExport(works, dataDirectory, timestamp);
 		}
 
 	}

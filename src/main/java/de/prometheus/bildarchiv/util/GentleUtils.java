@@ -161,10 +161,11 @@ public final class GentleUtils {
 	 * @throws JAXBException
 	 * @throws PropertyException
 	 */
-	public static void toXml(Set<ExtendedRelationship> relationships, File directory)
+	public static void toXml(Set<ExtendedRelationship> relationships, File directory, String timestamp)
 			throws JAXBException, PropertyException {
 
-		String fileName = "extended_relationships_" + getTimeStamp() + ".xml";
+//		String fileName = "extended_relationships_" + getTimeStamp() + ".xml";
+		String fileName = "extended_relationships_" + timestamp + ".xml";
 
 		if (logger.isInfoEnabled()) {
 			logger.info("Creating extended relationship xml file " + fileName);
@@ -188,9 +189,10 @@ public final class GentleUtils {
 	 * @throws JAXBException
 	 * @throws PropertyException
 	 */
-	public static void finalExport(final Set<Work> works, final File dir) throws JAXBException, PropertyException {
+	public static void finalExport(final Set<Work> works, final File dir, String timestamp) throws JAXBException, PropertyException {
 
-		final String fileName = "conedakor_source_" + getTimeStamp() + ".xml";
+//		final String fileName = "conedakor_source_" + getTimeStamp() + ".xml";
+		final String fileName = "conedakor_source_" + timestamp + ".xml";
 
 		if (logger.isInfoEnabled()) {
 			logger.info("Creating final source file " + fileName);

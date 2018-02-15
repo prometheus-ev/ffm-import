@@ -2,7 +2,7 @@ package de.prometheus.bildarchiv;
 
 import java.io.File;
 import java.io.FileNotFoundException;
-import java.io.IOException;
+import java.util.Date;
 import java.util.Properties;
 import java.util.Set;
 
@@ -14,7 +14,7 @@ import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
-import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang3.time.DateFormatUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -39,7 +39,7 @@ public class Application {
 		Options options = new Options();
 		
 		Option configOption = new Option("c", "config", true, "The configuration directory");
-		configOption.setRequired(true);
+		configOption.setRequired(false);
 		
 		Option dataOption = new Option("d", "data", true, "The data directory contains temporary and output files");
 		dataOption.setRequired(false);
@@ -47,8 +47,8 @@ public class Application {
 		options.addOption(configOption);
 		options.addOption(dataOption);
 		
-		String dataDirectoryPath = "/data";
-		String configDirectoryPath = "/conf";
+		String dataDirectoryPath = "./data";
+		String configDirectoryPath = "./conf";
 		
 		try {
 			CommandLineParser parser = new DefaultParser();
@@ -74,38 +74,25 @@ public class Application {
 				dataDirectoryPath =  cmd.getOptionValue("d");
 			}
 			
-			// clean data directories
-			File dataEnt = new File(dataDirectoryPath, Endpoint.ENTITIES.name());
-			if (dataEnt.exists() && dataEnt.isDirectory()){
-				try {
-					FileUtils.deleteDirectory(dataEnt);
-				} catch (IOException e) {
-					logger.error(e.toString());
-				}
-			}
-			File dataRel = new File(dataDirectoryPath, Endpoint.RELATIONSHIPS.name());
-			if (dataRel.exists() && dataRel.isDirectory()){
-				try {
-					FileUtils.deleteDirectory(dataRel);
-				} catch (IOException e) {
-					logger.error(e.toString());
-				}
-			}
+			File dataDir = new File(dataDirectoryPath);
+			dataDir.mkdir();
+			
+			String timestamp = DateFormatUtils.format(new Date(), "yyyy-MM-dd-HH-mm-ss");
 			
 			// harvest from ConedaKor and transform for Prometheus
-			GentleTripleGrabber gentleTripleGrabber = new GentleTripleGrabber(dataDirectoryPath);
+			GentleTripleGrabber gentleTripleGrabber = new GentleTripleGrabber(dataDir, timestamp);
 			try {
 				// harvest entities and relationships from ConedaKor
 				gentleTripleGrabber.listRecords(Endpoint.ENTITIES, null);
 				gentleTripleGrabber.listRecords(Endpoint.RELATIONSHIPS, null);
 				
 				// merge entities and relationships to extended relationships
-				GentleSegmentMerger gentleSegmentMerger = new GentleSegmentMerger(dataDirectoryPath);
+				GentleSegmentMerger gentleSegmentMerger = new GentleSegmentMerger(dataDir, timestamp);
 				Set<ExtendedRelationship> xtendedRelationships = gentleSegmentMerger.mergeEntitiesAndRelationships();
 
 				// transform extended relationships for Prometheus
-				GentleDataExtractor gentleDataExtractor = new GentleDataExtractor(xtendedRelationships, dataDirectoryPath);
-				gentleDataExtractor.extractData();
+				GentleDataExtractor gentleDataExtractor = new GentleDataExtractor(dataDir, timestamp);
+				gentleDataExtractor.extractData(xtendedRelationships);
 			}
 			catch (HttpURLConnectionException e){
 				logger.error(e.toString());

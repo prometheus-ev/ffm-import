@@ -25,8 +25,8 @@ import org.openarchives.model.RecordType;
 import org.openarchives.model.ResumptionTokenType;
 
 import de.prometheus.bildarchiv.exception.HttpRequestException;
-import de.prometheus.bildarchiv.exception.NoSuchEndpointException;
 import de.prometheus.bildarchiv.exception.HttpURLConnectionException;
+import de.prometheus.bildarchiv.exception.NoSuchEndpointException;
 import de.prometheus.bildarchiv.model.OAIPMHtypeWrapper;
 import de.prometheus.bildarchiv.util.Endpoint;
 import de.prometheus.bildarchiv.util.GentleUtils;
@@ -35,11 +35,13 @@ import de.prometheus.bildarchiv.util.ProgressBar;
 public class GentleTripleGrabber {
 
 	private Logger logger = LogManager.getLogger(GentleTripleGrabber.class);
+	
+	private final String timestamp;
+	private final File dataDir;
 
-	private String dataDirectory;
-
-	public GentleTripleGrabber(final String dataDirectory) {
-		this.dataDirectory = dataDirectory;
+	public GentleTripleGrabber(final File dataDir, final String timestamp) {
+		this.dataDir = dataDir;
+		this.timestamp = timestamp;
 	}
 
 	public void listRecords(Endpoint endpoint, Map<String,String> optionalArguments) throws NoSuchEndpointException, HttpURLConnectionException {
@@ -50,8 +52,9 @@ public class GentleTripleGrabber {
 		
 		ExecutorService executor = Executors.newFixedThreadPool(1);
 		AtomicInteger index = new AtomicInteger();
-		File parent = new File(new File(dataDirectory), endpoint.name());
-		parent.mkdirs();
+		
+		File recordsDir = new File(dataDir, endpoint.name() + "_" + timestamp);
+		recordsDir.mkdir();
 
 		ResumptionTokenType resumptionToken;
 		String url = endpoint.getListRecordsHttpRequestURL(arguments);
@@ -80,8 +83,8 @@ public class GentleTripleGrabber {
 				List<RecordType> records = oaiWrapper.getRecords();
 				if (!nullOrEmptyRecords(records)) {
 					int indexPos = index.incrementAndGet();
-					executor.execute(writeObject(parent, endpoint, new HashSet<RecordType>(records), indexPos));
-					executor.execute(writeXml(url, indexPos, endpoint, parent));
+					executor.execute(writeObject(recordsDir, endpoint, new HashSet<RecordType>(records), indexPos));
+					executor.execute(writeXml(url, indexPos, endpoint, recordsDir));
 					recordCount += records.size();
 					progress.increment(records.size());
 				}
