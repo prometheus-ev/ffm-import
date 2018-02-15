@@ -44,15 +44,19 @@ public class Application {
 		Option dataOption = new Option("d", "data", true, "The data directory contains temporary and output files");
 		dataOption.setRequired(false);
 		
+		Option timestampOption = new Option("ts", "timestamp", true, "The timestamp for the import");
+		timestampOption.setRequired(false);
+		
 		options.addOption(configOption);
 		options.addOption(dataOption);
+		options.addOption(timestampOption);
 		
-		String dataDirectoryPath = "./data";
-		String configDirectoryPath = "./conf";
 		
 		try {
 			CommandLineParser parser = new DefaultParser();
 			CommandLine cmd = parser.parse(options, args);
+			
+			String configDirectoryPath = "./conf";
 			
 			if(cmd.getOptionValue("c") != null) {
 				configDirectoryPath =  cmd.getOptionValue("c");
@@ -70,6 +74,8 @@ public class Application {
 			System.setProperty("apiKey", properties.getProperty("apiKey"));
 			System.setProperty("baseUrl", properties.getProperty("baseUrl"));
 			
+			String dataDirectoryPath = "./data";
+			
 			if(cmd.getOptionValue("d") != null) {
 				dataDirectoryPath =  cmd.getOptionValue("d");
 			}
@@ -78,6 +84,10 @@ public class Application {
 			dataDir.mkdir();
 			
 			String timestamp = DateFormatUtils.format(new Date(), "yyyy-MM-dd-HH-mm-ss");
+			
+			if(cmd.getOptionValue("ts") != null) {
+				timestamp =  cmd.getOptionValue("ts");
+			}
 			
 			// harvest from ConedaKor and transform for Prometheus
 			GentleTripleGrabber gentleTripleGrabber = new GentleTripleGrabber(dataDir, timestamp);
