@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Configuration status="WARN">
 	<Properties>
-		<Property name="filename">ffm.log</Property>
+		<Property name="filename">${log4j:configParentLocation}/../ffm.log</Property>
 		<Property name="user">${sys:user.name}</Property>
 	</Properties>
 	<Appenders>
